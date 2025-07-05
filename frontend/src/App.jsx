@@ -13,6 +13,7 @@ import PlaceOrder from './pages/PlaceOrder';
 import Orders from './pages/Orders';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import SearchBar from './components/SearchBar';
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
       className="min-h-screen bg-cover bg-center px-4 sm:px-[5vw] md:px-[7vw] ls:px-[9vw]"
       style={{ backgroundImage: `url(${assets.bg})` }}>
       <Navbar />
+      <SearchBar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/collection" element={<Collection />} />
