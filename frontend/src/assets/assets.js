@@ -72,8 +72,9 @@ import menu_icon from './menu_icon.png'
 import about_img from './about_img.png'
 import contact_img from './contact_img.png'
 import razorpay_logo from './razorpay_logo.png'
-import stripe_logo from './stripe_logo.png'
+import stripe_logo from './pay_u.png'
 import upi_logo from './upi_logo.png'
+import pay_u from './upi_logo.png'
 import cross_icon from './cross_icon.png'
 import bg from './bg.png'
 
@@ -98,6 +99,7 @@ export const assets = {
     razorpay_logo,
     stripe_logo,
     upi_logo,
+    pay_u,
     cross_icon
 }
 
