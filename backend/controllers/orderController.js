@@ -1,12 +1,17 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
-import Stripe from 'stripe'
+import Stripe from 'stripe';
+import crypto from 'crypto';
+import razorpay from 'razorpay'
 
 // global variables
 const currency = 'inr'
 const deliveryCharge = 100
 
 // gateway initialize
+const payuMerchantKey = process.env.PAYU_MERCHANT_KEY;
+const payuSalt = process.env.PAYU_SALT;
+const payuPaymentUrl = "https://secure.payu.in/_payment"
 
 
 // Placing Orders using COD Method
@@ -35,62 +40,82 @@ const placeOrder = async (req, res) => {
     }
 }
 
-// Stripe
-const placeOrderStripe = async (req, res) => {
+// PayU
+const placeOrderPayU = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body;
         const { origin } = req.headers;
 
-        const orderData = {
+        const txnid = `TXN_${Date.now()}`;
+        const productinfo = items.map(i => i.name).join(", ");
+        const firstname = address.name || "Customer";
+        const email = address.email || "customer@example.com";
+        const phone = address.phone || "9999999999";
+
+        const surl = `${origin}/verify?success=true&orderId=${txnid}`;
+        const furl = `${origin}/verify?success=false&orderId=${txnid}`;
+
+        // Construct the hash string according to PayU's format
+        const hashString = `${payuMerchantKey}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${payuSalt}`;
+        const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+
+        // Save order to DB
+        const newOrder = new orderModel({
             userId,
             items,
             address,
             amount,
+            txnid,
             paymentMethod: "PayU",
             payment: false,
             date: Date.now()
-        };
-
-        const newOrder = new orderModel(orderData);
+        });
         await newOrder.save();
-
-        // Optional: Clear user cart immediately, or wait until verify
-        await userModel.findByIdAndUpdate(userId, { cartData: {} });
-
-        // Static PayU Smart Link (use a dynamic one if you have that system)
-        const payuLink = ``;
 
         res.json({
             success: true,
-            message: "Order placed. Proceed to payment.",
-            payment_url: payuLink,
+            payuUrl: payuPaymentUrl,
+            params: {
+                key: payuMerchantKey,
+                txnid,
+                amount,
+                productinfo,
+                firstname,
+                email,
+                phone,
+                surl,
+                furl,
+                hash,
+                
+            },
             orderId: newOrder._id
         });
+
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
     }
 };
 
-const verifyStripe = async (req, res) => {
 
-    const { orderId, success, userId } = req.body
+
+const verifyPayU = async (req, res) => {
+    const { orderId, success, userId } = req.body;
+
     try {
-        if (success === "true"){
-            await orderModel.findByIdAndUpdate(orderId, {payment:true});
-            await userModel.findByIdAndUpdate(userId, {cartData: {}})
-            res.json({success:false})
+        if (success === "true") {
+            await orderModel.findByIdAndUpdate(orderId, { payment: true });
+            await userModel.findByIdAndUpdate(userId, { cartData: {} });
+            res.json({ success: true, message: "Payment verified and order Placed." });
+        } else {
+            res.json({ success: false, message: "Payment failed." });
         }
-        else{
-            await orderModel.findByIdAndUpdate(orderId)
-            res.json({success:false})
-        }
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
     }
-    catch (error) {
-        console.log(error)
-        res.json({success:false, message:error.message})
-    }
-}
+};
+
 
 // RazorPay
 const placeOrderRazorpay = async (req, res) => {
@@ -127,7 +152,7 @@ const userOrders = async (req, res) => {
 const updateStatus = async (req,res) => {
     try {
 
-        const { orderId, status } = res.body
+        const { orderId, status } = req.body
 
         await orderModel.findByIdAndUpdate(orderId, { status })
         res.json({success:true, message:'Status Updated'})
@@ -139,4 +164,4 @@ const updateStatus = async (req,res) => {
     }
 }
 
-export { placeOrder, placeOrderStripe, placeOrderRazorpay, allOrders, userOrders, updateStatus }
+export { verifyPayU, placeOrder, placeOrderPayU, placeOrderRazorpay, allOrders, userOrders, updateStatus }

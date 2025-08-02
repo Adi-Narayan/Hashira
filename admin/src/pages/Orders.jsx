@@ -34,7 +34,7 @@ const Orders = ({token}) => {
       await fetchAllOrders()
     }
     catch (error) {
-      toast.error(response.data.message)
+      toast.error(error?.response?.data?.message || error.message)
     }
   }
 
@@ -80,7 +80,7 @@ const Orders = ({token}) => {
                 <option value="Packing">Packing</option>
                 <option value="Shipped">Shipped</option>
                 <option value="Out for Delivery">Out for Delivery</option>
-                <option value="Delivery">Delivery</option>
+                <option value="Delivery">Delivered</option>
               </select>
             </div>
           ))

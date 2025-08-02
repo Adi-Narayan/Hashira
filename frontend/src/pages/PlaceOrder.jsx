@@ -32,22 +32,24 @@ const PlaceOrder = () => {
     event.preventDefault()
     try {
 
-      let orderItems = []
+      let orderItems = [];
 
-      for(const items in cartItems) {
-        for(const item in cartItems[item]) {
-          if (cartItems[items][item] > 0) {
-            const itemInfo = structuredClone(products.find(product => product._id === items))
-            if (iteminfo) {
-              itemInfo.size = item
-              itemInfo.quantity = cartItems[items][item]
-              orderItems.push(itemInfo)
+      for (const productId in cartItems) {
+        const sizes = cartItems[productId]; // object with size as keys
+        for (const size in sizes) {
+          const quantity = sizes[size];
+          if (quantity > 0) {
+            const itemInfo = structuredClone(products.find(product => product._id === productId));
+            if (itemInfo) {
+              itemInfo.size = size;
+              itemInfo.quantity = quantity;
+              orderItems.push(itemInfo);
             }
           }
         }
       }
-
       let orderData = {
+        userId: token,
         address: formData,
         items: orderItems,
         amount: getCartAmount() + delivery_fee
@@ -67,16 +69,29 @@ const PlaceOrder = () => {
           }          
           break;
 
-          // API calls for Stripe
-        case 'stripe':
-          const responsePayU = await axios.post(backendUrl + '/api/order/stripe', orderData, {headers:{token}})
+          // API calls for PayU
+        case 'payu':
+          const responsePayU = await axios.post(backendUrl + '/api/order/payu', orderData, { headers: { token } })
           if (responsePayU.data.success) {
-            setCartItems({})
-            navigate('/orders')
-          }
-          else {
+            const { payuUrl, params } = responsePayU.data;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = payuUrl;
+
+            for (const key in params) {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = params[key];
+              form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+          } else {
             toast.error(responsePayU.data.message)
-          } 
+          }
           break;
 
           // API calls for Razorpay
@@ -126,8 +141,8 @@ const PlaceOrder = () => {
           <Title text1={'PAYMENT'} text2={'METHOD'}/>
 
           <div className='flex gap-3 flex-col lg:flex-row'>
-            <div onClick={()=>setMethod('stripe')} className='flex items-center gap-3 border bg-white p-2 px-3 cursor-pointer'>
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'upi' ? 'bg-black' : ''}`}></p>
+            <div onClick={()=>setMethod('payu')} className='flex items-center gap-3 border bg-white p-2 px-3 cursor-pointer'>
+              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'payu' ? 'bg-black' : ''}`}></p>
               <img className='h-5 mx-4' src={assets.pay_u} alt=""/>
             </div>
             <div onClick={()=>setMethod('razorpay')} className='flex items-center gap-3 border bg-white p-2 px-3 cursor-pointer'>
