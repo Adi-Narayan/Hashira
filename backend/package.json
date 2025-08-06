@@ -19,6 +19,9 @@
     "start": "node server.js",
     "server": "nodemon server.js"
   },
+  "engines": {
+    "node": "20.14.0"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
