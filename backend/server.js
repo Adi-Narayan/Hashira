@@ -16,7 +16,11 @@ connectCloudinary()
 
 //middleswares
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+  origin: 'https://hashira.in',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
 
 //api endpoints
 app.use('/api/user', userRouter)
