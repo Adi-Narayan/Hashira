@@ -1,12 +1,24 @@
-import mongoose, { mongo } from "mongoose"
+import mongoose from "mongoose";
 
 const connectDB = async () => {
+  try {
+    const uri = process.env.MONGODB_URI;
 
-    mongoose.connection.on('connected', () => {
-        console.log("DB Connected");
-    })
-    await mongoose.connect(`${process.env.MONGODB_URI}/e-commerce`)
+    if (!uri) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
 
-}
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      dbName: "e-commerce" // use dbName option instead of concatenating
+    });
 
-export default connectDB
+    console.log("✅ MongoDB connected successfully");
+  } catch (error) {
+    console.error("❌ MongoDB connection error:", error.message);
+    
+  }
+};
+
+export default connectDB;
