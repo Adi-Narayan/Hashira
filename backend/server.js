@@ -13,7 +13,7 @@ const port = process.env.PORT || 4000;
 
 app.use(express.json());
 app.use(cors({
-  origin: 'https://hashira.in',
+  origin: 'https://www.hashira.in',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
@@ -32,7 +32,7 @@ const startServer = async () => {
   connectCloudinary();
 
   app.listen(port, () => {
-    console.log(`🚀 Server started on PORT : ${port}`);
+    console.log(`Server started on PORT : ${port}`);
   });
 };
 
