@@ -16,7 +16,8 @@ app.use(express.json());
 // Allow both hashira.in and www.hashira.in
 const allowedOrigins = [
   "https://hashira.in",
-  "https://www.hashira.in"
+  "https://www.hashira.in",
+  "https://hashira-admin.vercel.app"
 ];
 
 app.use(cors({
