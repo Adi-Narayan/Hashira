@@ -49,7 +49,6 @@ const PlaceOrder = () => {
         }
       }
       let orderData = {
-        userId: token,
         address: formData,
         items: orderItems,
         amount: getCartAmount() + delivery_fee
@@ -92,10 +91,6 @@ const PlaceOrder = () => {
           } else {
             toast.error(responsePayU.data.message)
           }
-          break;
-
-          // API calls for Razorpay
-        case 'razorpay':
           break;
           
         default:
@@ -146,11 +141,6 @@ const PlaceOrder = () => {
               <img className='h-5 mx-4' src={assets.pay_u} alt=""/>
             </div>
             {/*
-            
-            <div onClick={()=>setMethod('razorpay')} className='flex items-center gap-3 border bg-white p-2 px-3 cursor-pointer'>
-              <p className={`min-w-3.5 h-3.5 border rounded-full ${method === 'razorpay' ? 'bg-black' : ''}`}></p>
-              <img className='h-5 mx-4' src={assets.razorpay_logo} alt=""/>
-            </div>
 
             */}
             <div onClick={()=>setMethod('cod')} className='flex items-center gap-3 border bg-white p-2 px-3 cursor-pointer'>

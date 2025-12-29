@@ -2,6 +2,7 @@ import userModel from "../models/userModel.js";
 import validator from "validator"
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
+import { sendWelcomeEmail } from '../services/emailService.js';
 
 // Create JWT token
 const createToken = (id) => {
@@ -53,6 +54,12 @@ const registerUser = async (req, res) => {
         const newUser = new userModel({ name, email, password }); // password will be hashed by pre-save
         const user = await newUser.save();
         const token = createToken(user._id);
+
+        // Send welcome email (non-blocking)
+        const frontendUrl = req.headers.origin || 'https://hashira.in';
+        sendWelcomeEmail(email, name, frontendUrl).catch(err => 
+            console.error('Failed to send welcome email:', err)
+        );
 
         res.json({ success: true, token });
     } catch (error) {

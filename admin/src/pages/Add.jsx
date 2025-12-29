@@ -50,7 +50,7 @@ const Add = ({token}) => {
           setPrice('')
         }
         else{
-          toast.error.message(response.data.message)
+          toast.error(response.data.message)
         }
     }
     catch (error) {
