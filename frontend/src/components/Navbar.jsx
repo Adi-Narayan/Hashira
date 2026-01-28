@@ -16,7 +16,7 @@ const Navbar = () => {
     }
 
   return (
-    <div className='flex items-center justify-between py-5 pt-18 pb-16 font-medium mb-8'>
+    <div className='flex items-center justify-between py-5 pt-18 pb-14 font-medium mb-8'>
         {/* Left side - Navigation */}
         <ul className='hidden sm:flex gap-5 text-sm text-gray-700'>
             <NavLink to='/' className='flex flex-col items-center gap-1'>
@@ -41,7 +41,7 @@ const Navbar = () => {
         </ul>
 
         {/* Center - Logo */}
-        <Link to='/' className='absolute left-1/2 transform -translate-x-1/2'>
+        <Link to='/' className='absolute left-0 sm:left-1/2 sm:transform sm:-translate-x-1/2'>
             <img src={assets.logo} className='w-36' alt="" />
         </Link>
         

@@ -10,6 +10,7 @@ const Product = () => {
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState('');
   const [size, setSize] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const fetchProductData = async () => {
     products.map((item) => {
@@ -24,6 +25,17 @@ const Product = () => {
   useEffect(() => {
     fetchProductData();
   }, [productId, products]);
+
+  const handleAddToCart = () => {
+    if (!size) return;
+    
+    setIsAdding(true);
+    addToCart(productData._id, size);
+    
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 600);
+  };
 
   return productData ? (
     <div className="border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100">
@@ -76,9 +88,17 @@ const Product = () => {
                 <button
                   key={index}
                   onClick={() => setSize(item)}
-                  className={`border py-2 px-4 bg-gray-100 rounded-md ${
-                    item === size ? 'border-orange-500' : ''
-                  }`}
+                  className={`
+                    border py-2 px-4 rounded-md
+                    transition-all duration-200
+                    ${item === size 
+                      ? 'border-orange-500 bg-orange-50 scale-105 shadow-sm' 
+                      : 'border-gray-300 bg-gray-100 hover:border-gray-400 hover:bg-gray-200 hover:scale-102'
+                    }
+                  `}
+                  style={{
+                    transform: item === size ? 'translateY(-1px)' : 'translateY(0)',
+                  }}
                 >
                   {item}
                 </button>
@@ -87,10 +107,22 @@ const Product = () => {
           </div>
 
           <button
-            onClick={() => addToCart(productData._id, size)}
-            className="bg-black text-white px-8 py-3 text-sm rounded-md active:bg-gray-700"
+            onClick={handleAddToCart}
+            disabled={isAdding}
+            className={`
+              bg-black text-white px-8 py-3 text-sm rounded-md
+              transition-all duration-300
+              ${isAdding 
+                ? 'scale-95 opacity-80' 
+                : 'hover:scale-105 hover:shadow-lg hover:bg-gray-800'
+              }
+              disabled:cursor-not-allowed
+            `}
+            style={{
+              transform: isAdding ? 'scale(0.95)' : 'scale(1)',
+            }}
           >
-            ADD TO CART
+            {isAdding ? 'ADDING...' : 'ADD TO CART'}
           </button>
 
           <hr className="mt-8 sm:w-4/5" />
