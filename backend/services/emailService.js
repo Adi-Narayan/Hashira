@@ -1,13 +1,14 @@
 // backend/services/emailService.js
-import * as Brevo from '@getbrevo/brevo';
+import SibApiV3Sdk from '@getbrevo/brevo';
+const { TransactionalEmailsApi, SendSmtpEmail } = SibApiV3Sdk;
 
 // Configure Brevo API client
-const brevoClient = new Brevo.TransactionalEmailsApi();
+const brevoClient = new TransactionalEmailsApi();
 brevoClient.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
 
 // Helper to send email via Brevo HTTP API
 const sendEmail = async (to, subject, html) => {
-  const email = new Brevo.SendSmtpEmail();
+  const email = new SendSmtpEmail();
   email.to = [{ email: to }];
   email.subject = subject;
   email.htmlContent = html;
