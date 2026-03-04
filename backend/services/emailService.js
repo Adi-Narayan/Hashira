@@ -1,25 +1,21 @@
 // backend/services/emailService.js
-import nodemailer from 'nodemailer';
+import * as Brevo from '@getbrevo/brevo';
 
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_EMAIL,
-    pass: process.env.BREVO_SMTP_KEY
-  }
-});
+// Configure Brevo API client
+const brevoClient = new Brevo.TransactionalEmailsApi();
+brevoClient.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
 
-// Verify transporter
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Email service error:', error);
-  } else {
-    console.log('Email service ready');
-  }
-});
+// Helper to send email via Brevo HTTP API
+const sendEmail = async (to, subject, html) => {
+  const email = new Brevo.SendSmtpEmail();
+  email.to = [{ email: to }];
+  email.subject = subject;
+  email.htmlContent = html;
+  email.sender = { email: process.env.BREVO_EMAIL, name: 'Hashira' };
+  return await brevoClient.sendTransacEmail(email);
+};
+
+console.log('Email service ready');
 
 // Welcome email template
 const getWelcomeEmailTemplate = (userName, frontendUrl = 'https://hashira.in') => `
@@ -187,12 +183,7 @@ const getOrderStatusTemplate = (orderDetails, status) => {
 // Send welcome email
 export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https://hashira.in') => {
   try {
-    await transporter.sendMail({
-      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
-      to: userEmail,
-      subject: 'Welcome to Hashira! 🎉',
-      html: getWelcomeEmailTemplate(userName, frontendUrl)
-    });
+    await sendEmail(userEmail, 'Welcome to Hashira! 🎉', getWelcomeEmailTemplate(userName, frontendUrl));
     console.log(`Welcome email sent to ${userEmail}`);
     return { success: true };
   } catch (error) {
@@ -204,12 +195,7 @@ export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https
 // Send order confirmation email
 export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
   try {
-    await transporter.sendMail({
-      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
-      to: userEmail,
-      subject: `Order Confirmation - #${orderDetails.orderId}`,
-      html: getOrderConfirmationTemplate(orderDetails)
-    });
+    await sendEmail(userEmail, `Order Confirmation - #${orderDetails.orderId}`, getOrderConfirmationTemplate(orderDetails));
     console.log(`Order confirmation sent to ${userEmail}`);
     return { success: true };
   } catch (error) {
@@ -221,12 +207,7 @@ export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
 // Send order status update email
 export const sendOrderStatusEmail = async (userEmail, orderDetails, status) => {
   try {
-    await transporter.sendMail({
-      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
-      to: userEmail,
-      subject: `Order Status Update - ${status}`,
-      html: getOrderStatusTemplate(orderDetails, status)
-    });
+    await sendEmail(userEmail, `Order Status Update - ${status}`, getOrderStatusTemplate(orderDetails, status));
     console.log(`Order status email sent to ${userEmail}`);
     return { success: true };
   } catch (error) {
