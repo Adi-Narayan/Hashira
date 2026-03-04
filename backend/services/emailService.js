@@ -1,18 +1,28 @@
 // backend/services/emailService.js
-import { TransactionalEmailsApi, SendSmtpEmail, ApiClient } from '@getbrevo/brevo';
 
-// Configure Brevo API client
-const brevoClient = new TransactionalEmailsApi();
-brevoClient.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
-
-// Helper to send email via Brevo HTTP API
+// Helper to send email via Brevo REST API
 const sendEmail = async (to, subject, html) => {
-  const email = new SendSmtpEmail();
-  email.to = [{ email: to }];
-  email.subject = subject;
-  email.htmlContent = html;
-  email.sender = { email: process.env.BREVO_EMAIL, name: 'Hashira' };
-  return await brevoClient.sendTransacEmail(email);
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'api-key': process.env.BREVO_API_KEY
+    },
+    body: JSON.stringify({
+      sender: { name: 'Hashira', email: process.env.BREVO_EMAIL },
+      to: [{ email: to }],
+      subject: subject,
+      htmlContent: html
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to send email');
+  }
+
+  return response.json();
 };
 
 console.log('Email service ready');
