@@ -1,6 +1,5 @@
 // backend/services/emailService.js
-import SibApiV3Sdk from '@getbrevo/brevo';
-const { TransactionalEmailsApi, SendSmtpEmail } = SibApiV3Sdk;
+import { TransactionalEmailsApi, SendSmtpEmail, ApiClient } from '@getbrevo/brevo';
 
 // Configure Brevo API client
 const brevoClient = new TransactionalEmailsApi();
