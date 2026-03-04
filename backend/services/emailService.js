@@ -3,10 +3,12 @@ import nodemailer from 'nodemailer';
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false,
   auth: {
-    user: process.env.ADMIN_EMAIL,
-    pass: process.env.ADMIN_PASSWORD
+    user: process.env.BREVO_EMAIL,
+    pass: process.env.BREVO_SMTP_KEY
   }
 });
 
@@ -186,7 +188,7 @@ const getOrderStatusTemplate = (orderDetails, status) => {
 export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https://hashira.in') => {
   try {
     await transporter.sendMail({
-      from: `"Hashira" <${process.env.EMAIL_USER}>`,
+      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
       to: userEmail,
       subject: 'Welcome to Hashira! 🎉',
       html: getWelcomeEmailTemplate(userName, frontendUrl)
@@ -203,7 +205,7 @@ export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https
 export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
   try {
     await transporter.sendMail({
-      from: `"Hashira" <${process.env.EMAIL_USER}>`,
+      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
       to: userEmail,
       subject: `Order Confirmation - #${orderDetails.orderId}`,
       html: getOrderConfirmationTemplate(orderDetails)
@@ -220,7 +222,7 @@ export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
 export const sendOrderStatusEmail = async (userEmail, orderDetails, status) => {
   try {
     await transporter.sendMail({
-      from: `"Hashira" <${process.env.EMAIL_USER}>`,
+      from: `"Hashira" <${process.env.BREVO_EMAIL}>`,
       to: userEmail,
       subject: `Order Status Update - ${status}`,
       html: getOrderStatusTemplate(orderDetails, status)
