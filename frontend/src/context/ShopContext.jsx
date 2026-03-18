@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState } from "react";
-import { toast } from "react-toastify";
+
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios'
 
@@ -14,12 +14,31 @@ const ShopContextProvider = (props) => {
     const [showSearch, setShowSearch] = useState(false)
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
-    const [token, setToken] = useState('')  // ✅ was ' ' (space) — caused ghost auth on every load
+    const [token, setToken] = useState('') // empty string — never a space
     const navigate = useNavigate();
+
+    // ── Silently wipe session when JWT expires or is invalid ──
+    const clearExpiredSession = () => {
+        localStorage.removeItem('token')
+        setToken('')
+        setCartItems({})
+    }
+
+    // ── Check if a backend response indicates an expired/invalid token ──
+    const isAuthError = (message = '') => {
+        const m = message.toLowerCase()
+        return (
+            m.includes('expired') ||
+            m.includes('not authorized') ||
+            m.includes('invalid token') ||
+            m.includes('signup') ||
+            m.includes('login')
+        )
+    }
 
     const addToCart = async (itemId, size) => {
         if (!size) {
-            toast.error('Select Product Size')
+            console.log('No size selected')
             return;
         }
 
@@ -38,10 +57,12 @@ const ShopContextProvider = (props) => {
 
         if (token) {
             try {
-                await axios.post(backendUrl + '/api/cart/add', { itemId, size }, { headers: { token } })
+                const response = await axios.post(backendUrl + '/api/cart/add', { itemId, size }, { headers: { token } })
+                if (!response.data.success && isAuthError(response.data.message)) {
+                    clearExpiredSession()
+                }
             } catch (error) {
                 console.log(error)
-                toast.error(error.message)
             }
         }
     }
@@ -69,10 +90,12 @@ const ShopContextProvider = (props) => {
 
         if (token) {
             try {
-                await axios.post(backendUrl + '/api/cart/update', { itemId, size, quantity }, { headers: { token } })
+                const response = await axios.post(backendUrl + '/api/cart/update', { itemId, size, quantity }, { headers: { token } })
+                if (!response.data.success && isAuthError(response.data.message)) {
+                    clearExpiredSession()
+                }
             } catch (error) {
                 console.log(error)
-                toast.error(error.message)
             }
         }
     }
@@ -104,10 +127,10 @@ const ShopContextProvider = (props) => {
             if (response.data.products) {
                 setProducts(response.data.products)
             } else {
-                toast.error(response.data.message)
+                console.log(response.data.message)
             }
         } catch (error) {
-            toast.error(error.message)
+            console.log(error.message)
         }
     }
 
@@ -116,10 +139,12 @@ const ShopContextProvider = (props) => {
             const response = await axios.post(backendUrl + '/api/cart/get', {}, { headers: { token } })
             if (response.data.success) {
                 setCartItems(response.data.cartData)
+            } else if (isAuthError(response.data.message)) {
+                // Token expired — wipe silently, no toast
+                clearExpiredSession()
             }
         } catch (error) {
             console.log(error)
-            // ✅ Silently fail — don't toast on cart fetch errors (avoids "Not Authorized" on load)
         }
     }
 
@@ -129,7 +154,6 @@ const ShopContextProvider = (props) => {
 
     useEffect(() => {
         const savedToken = localStorage.getItem('token')
-        // ✅ Only restore session if a real non-empty token exists in localStorage
         if (savedToken && savedToken.trim() !== '') {
             setToken(savedToken)
             getUserCart(savedToken)
