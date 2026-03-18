@@ -14,7 +14,7 @@ const ShopContextProvider = (props) => {
     const [showSearch, setShowSearch] = useState(false)
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
-    const [token, setToken] = useState(' ')
+    const [token, setToken] = useState('')  // ✅ was ' ' (space) — caused ghost auth on every load
     const navigate = useNavigate();
 
     const addToCart = async (itemId, size) => {
@@ -56,7 +56,6 @@ const ShopContextProvider = (props) => {
                     }
                 } catch (error) {
                     console.log(error)
-                    toast.error(error.message)
                 }
             }
         }
@@ -89,14 +88,12 @@ const ShopContextProvider = (props) => {
                     }
                 } catch (error) {
                     console.log(error)
-                    toast.error(error.message)
                 }
             }
         }
         return totalAmount;
     }
 
-    // ✅ Returns 0 if cart has more than 1 item, otherwise returns base delivery fee
     const getFinalDeliveryFee = () => {
         return getCartCount() > 1 ? 0 : delivery_fee;
     }
@@ -122,7 +119,7 @@ const ShopContextProvider = (props) => {
             }
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            // ✅ Silently fail — don't toast on cart fetch errors (avoids "Not Authorized" on load)
         }
     }
 
@@ -131,15 +128,17 @@ const ShopContextProvider = (props) => {
     }, [])
 
     useEffect(() => {
-        if (!token && localStorage.getItem('token')) {
-            setToken(localStorage.getItem('token'))
-            getUserCart(localStorage.getItem('token'))
+        const savedToken = localStorage.getItem('token')
+        // ✅ Only restore session if a real non-empty token exists in localStorage
+        if (savedToken && savedToken.trim() !== '') {
+            setToken(savedToken)
+            getUserCart(savedToken)
         }
     }, [])
 
     const value = {
         products, currency, delivery_fee,
-        getFinalDeliveryFee,              // ✅ new
+        getFinalDeliveryFee,
         search, setSearch, showSearch, setShowSearch,
         cartItems, addToCart, getCartCount, updateQuantity,
         getCartAmount, navigate, backendUrl, setToken, token,
