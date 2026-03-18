@@ -9,7 +9,7 @@ import axios from 'axios'
 const PlaceOrder = () => {
 
   const [method, setMethod] = useState('cod');
-  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, delivery_fee, getFinalDeliveryFee, products } = useContext(ShopContext);  // ✅ added getFinalDeliveryFee
+  const { navigate, backendUrl, token, cartItems, setCartItems, getCartAmount, getFinalDeliveryFee, products } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -51,12 +51,11 @@ const PlaceOrder = () => {
       let orderData = {
         address: formData,
         items: orderItems,
-        amount: getCartAmount() + getFinalDeliveryFee()   // ✅ uses dynamic fee
+        amount: getCartAmount() + getFinalDeliveryFee()
       }
 
       switch (method) {
 
-        // COD
         case 'cod':
           const response = await axios.post(backendUrl + '/api/order/place', orderData, { headers: { token } })
           if (response.data.success) {
@@ -67,16 +66,13 @@ const PlaceOrder = () => {
           }
           break;
 
-        // PayU
         case 'payu':
           const responsePayU = await axios.post(backendUrl + '/api/order/payu', orderData, { headers: { token } })
           if (responsePayU.data.success) {
             const { payuUrl, params } = responsePayU.data;
-
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = payuUrl;
-
             for (const key in params) {
               const input = document.createElement('input');
               input.type = 'hidden';
@@ -84,7 +80,6 @@ const PlaceOrder = () => {
               input.value = params[key];
               form.appendChild(input);
             }
-
             document.body.appendChild(form);
             form.submit();
           } else {
@@ -100,6 +95,42 @@ const PlaceOrder = () => {
       console.log(error)
       toast.error(error.message)
     }
+  }
+
+  // ── Not logged in — show inline prompt instead of the order form ──
+  if (!token) {
+    return (
+      <div className='border-t pt-14 min-h-[80vh] flex items-center justify-center'>
+        <div className='flex flex-col items-center gap-5 text-center max-w-sm'>
+          {/* Icon */}
+          <div className='w-14 h-14 rounded-full bg-black flex items-center justify-center'>
+            <svg xmlns="http://www.w3.org/2000/svg" className='w-7 h-7 text-white' viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            </svg>
+          </div>
+
+          <div>
+            <p className='text-xl font-semibold text-gray-900'>Sign in to place your order</p>
+            <p className='text-sm text-gray-500 mt-2'>You need to be logged in to complete your purchase.</p>
+          </div>
+
+          <div className='flex gap-3 w-full'>
+            <button
+              onClick={() => navigate('/login')}
+              className='flex-1 bg-black text-white py-2.5 text-sm font-medium rounded-full hover:bg-gray-800 transition-colors'
+            >
+              Login Now
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className='flex-1 border border-gray-300 text-gray-600 py-2.5 text-sm font-medium rounded-full hover:bg-gray-50 transition-colors'
+            >
+              Continue Browsing
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

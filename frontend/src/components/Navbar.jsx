@@ -28,7 +28,7 @@ const Navbar = () => {
         const timer = setTimeout(() => {
             setLoginPrompt(true);
             sessionStorage.setItem('loginPromptShown', 'true');
-        }, 20000);
+        }, 60000);
         return () => clearTimeout(timer);
     }, [token]);
 
