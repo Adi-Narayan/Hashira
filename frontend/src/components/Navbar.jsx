@@ -8,7 +8,7 @@ const Navbar = () => {
     const [visible, setVisible] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems } = useContext(ShopContext)
-    const location = useLocation(); // ✅ to detect current page
+    const location = useLocation();
     const isHome = location.pathname === '/';
 
     const logout = () => {
@@ -43,9 +43,14 @@ const Navbar = () => {
             </div>
 
             {/* ── Main Navbar ── */}
-            <div className='flex items-center justify-between py-5 pt-18 pb-14 font-medium mb-8 relative'>
+            {/*
+                FIX: Use a 3-column grid on mobile so the logo is truly centered
+                and the icons on the right can never bleed into it.
+                On sm+ we fall back to the original flex layout.
+            */}
+            <div className='grid grid-cols-3 sm:flex sm:items-center sm:justify-between py-5 pt-18 pb-14 font-medium mb-8 relative'>
 
-                {/* Left — Desktop Nav Links */}
+                {/* Left — Desktop Nav Links (hidden on mobile, left cell is empty/spacer) */}
                 <ul className='hidden sm:flex gap-5 text-sm text-gray-700'>
                     {[['/', 'HOME'], ['/collection', 'COLLECTIONS'], ['/about', 'ABOUT'], ['/contact', 'CONTACT']].map(([path, label]) => (
                         <NavLink key={path} to={path} className={({ isActive }) =>
@@ -57,15 +62,15 @@ const Navbar = () => {
                     ))}
                 </ul>
 
-                {/* Center — Logo */}
-                <Link to='/' className='absolute left-1/2 -translate-x-1/2'>
+                {/* Center — Logo (col-start-2 centres it in the grid on mobile) */}
+                <Link to='/' className='flex justify-center items-center sm:absolute sm:left-1/2 sm:-translate-x-1/2'>
                     <img src={assets.logo} className='w-36' alt="Logo" />
                 </Link>
 
                 {/* Right — Actions */}
-                <div className='flex items-center gap-3 sm:gap-4 ml-auto'>
+                <div className='flex items-center justify-end gap-3 sm:gap-4'>
 
-                    {/* ✅ Search — hidden on home page */}
+                    {/* Search — hidden on home page */}
                     {!isHome && (
                         <button
                             onClick={() => setShowSearch(true)}
@@ -76,17 +81,40 @@ const Navbar = () => {
                         </button>
                     )}
 
-                    {/* ✅ Auth — Login button OR Account dropdown */}
+                    {/* Auth — Login dropdown OR Account dropdown */}
                     {!token ? (
-                        <button
-                            onClick={() => navigate('/login')}
-                            className='flex items-center gap-2 px-4 py-1.5 border border-black text-sm font-medium rounded-full hover:bg-black hover:text-white transition-all duration-200'
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className='w-3.5 h-3.5' viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                            </svg>
-                            <span className='hidden sm:inline'>Login</span>
-                        </button>
+                        <div className='relative'>
+                            <button
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                className='flex items-center gap-2 px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-full hover:border-black transition-all duration-200 bg-white'
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4 text-gray-700' viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                                </svg>
+                                <span className='hidden sm:inline text-gray-700'>Account</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M7 10l5 5 5-5z"/>
+                                </svg>
+                            </button>
+
+                            {profileOpen && (
+                                <div className='fixed inset-0 z-10' onClick={() => setProfileOpen(false)} />
+                            )}
+
+                            {profileOpen && (
+                                <div className='absolute right-0 mt-2 z-20 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden'>
+                                    <button
+                                        onClick={() => { navigate('/login'); setProfileOpen(false); }}
+                                        className='w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors'
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4 text-gray-400' viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                                        </svg>
+                                        Login Now
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className='relative'>
                             {/* Account Button */}
@@ -108,25 +136,11 @@ const Navbar = () => {
                                 <div className='fixed inset-0 z-10' onClick={() => setProfileOpen(false)} />
                             )}
 
-                            {/* ✅ Dropdown */}
+                            {/* Dropdown */}
                             {profileOpen && (
                                 <div className='absolute right-0 mt-2 z-20 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden'>
 
-                                    {/* My Profile */}
-                                    <button
-                                        onClick={() => { navigate('/profile'); setProfileOpen(false); }}
-                                        className='w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors'
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4 text-gray-400' viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                                        </svg>
-                                        My Profile
-                                    </button>
-
-                                    {/* Divider */}
-                                    <div className='border-t border-gray-100 mx-3' />
-
-                                    {/* ✅ Orders — separated with package icon */}
+                                    {/* Orders */}
                                     <button
                                         onClick={() => { navigate('/orders'); setProfileOpen(false); }}
                                         className='w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors'
@@ -205,26 +219,19 @@ const Navbar = () => {
                         ))}
                     </nav>
 
-                    {/* ✅ Mobile Auth Section */}
+                    {/* Mobile Auth Section */}
                     <div className='mt-auto border-t border-gray-100 p-5 flex flex-col gap-3'>
                         {!token ? (
+                            /* ── Not logged in: "Login Now" is the priority CTA ── */
                             <button
                                 onClick={() => { navigate('/login'); setVisible(false); }}
                                 className='w-full py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors'
                             >
-                                Login / Sign Up
+                                Login Now
                             </button>
                         ) : (
                             <>
-                                <button
-                                    onClick={() => { navigate('/profile'); setVisible(false); }}
-                                    className='w-full flex items-center gap-3 py-2.5 px-4 text-sm text-gray-700 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors'
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4' viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                                    </svg>
-                                    My Profile
-                                </button>
+                                {/* Orders */}
                                 <button
                                     onClick={() => { navigate('/orders'); setVisible(false); }}
                                     className='w-full flex items-center gap-3 py-2.5 px-4 text-sm text-gray-700 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors'
@@ -234,6 +241,7 @@ const Navbar = () => {
                                     </svg>
                                     My Orders
                                 </button>
+                                {/* Logout */}
                                 <button
                                     onClick={() => { logout(); setVisible(false); }}
                                     className='w-full flex items-center gap-3 py-2.5 px-4 text-sm text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition-colors'
