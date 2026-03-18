@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import { assets } from '../assets/assets'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext';
@@ -7,6 +7,7 @@ const Navbar = () => {
 
     const [visible, setVisible] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [loginPrompt, setLoginPrompt] = useState(false);
     const { setShowSearch, getCartCount, navigate, token, setToken, setCartItems } = useContext(ShopContext)
     const location = useLocation();
     const isHome = location.pathname === '/';
@@ -19,9 +20,21 @@ const Navbar = () => {
         setProfileOpen(false);
     }
 
+    // ── 20-second login prompt (once per session, only if not logged in) ──
+    useEffect(() => {
+        if (token) return;
+        const already = sessionStorage.getItem('loginPromptShown');
+        if (already) return;
+        const timer = setTimeout(() => {
+            setLoginPrompt(true);
+            sessionStorage.setItem('loginPromptShown', 'true');
+        }, 20000);
+        return () => clearTimeout(timer);
+    }, [token]);
+
     return (
         <>
-            {/* ── Announcement Bar (scrolls away) ── */}
+            {/* ── Announcement Bar ── */}
             <div className='w-full bg-black text-white overflow-hidden'>
                 <div className='flex sm:hidden py-2 whitespace-nowrap'>
                     <div className='animate-marquee flex gap-16 text-[11px] tracking-widest uppercase font-light'>
@@ -42,31 +55,32 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* ── Logo Row (scrolls away) ── */}
-            <div className='flex items-center justify-center py-4 sm:py-6'>
-                <Link to='/'>
-                    <img src={assets.logo} className='w-32 sm:w-40' alt="Logo" />
-                </Link>
-            </div>
-
-            {/* ── Sticky Icon / Nav Bar — stays fixed on scroll ── */}
+            {/* ── Sticky Navbar ── */}
             <div className='sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm'>
-                <div className='flex items-center justify-between px-4 sm:px-8 py-2.5'>
+                <div className='relative flex items-center justify-between px-4 sm:px-8 py-2.5 sm:py-5'>
 
-                    {/* Left — Desktop nav links */}
-                    <ul className='hidden sm:flex gap-6 text-sm text-gray-700'>
-                        {[['/', 'HOME'], ['/collection', 'COLLECTIONS'], ['/about', 'ABOUT'], ['/contact', 'CONTACT']].map(([path, label]) => (
-                            <NavLink key={path} to={path} className={({ isActive }) =>
-                                `transition-colors ${isActive ? 'text-black font-semibold' : 'hover:text-black'}`
-                            }>
-                                {label}
-                            </NavLink>
-                        ))}
-                    </ul>
+                    {/* Left — Desktop nav links / Mobile mini-logo */}
+                    <div className='flex items-center'>
+                        {/* Desktop nav links */}
+                        <ul className='hidden sm:flex gap-6 text-sm text-gray-700'>
+                            {[['/', 'HOME'], ['/collection', 'COLLECTIONS'], ['/about', 'ABOUT'], ['/contact', 'CONTACT']].map(([path, label]) => (
+                                <NavLink key={path} to={path} className={({ isActive }) =>
+                                    `transition-colors ${isActive ? 'text-black font-semibold' : 'hover:text-black'}`
+                                }>
+                                    {label}
+                                </NavLink>
+                            ))}
+                        </ul>
 
-                    {/* Mobile left — mini logo so the bar isn't empty */}
-                    <Link to='/' className='sm:hidden'>
-                        <img src={assets.logo} className='w-20' alt="Logo" />
+                        {/* Mobile — mini logo on the left */}
+                        <Link to='/' className='sm:hidden'>
+                            <img src={assets.logo} className='w-20' alt="Logo" />
+                        </Link>
+                    </div>
+
+                    {/* Center — Logo (desktop/tablet only, absolutely centered) */}
+                    <Link to='/' className='hidden sm:block absolute left-1/2 -translate-x-1/2'>
+                        <img src={assets.logo} className='w-28' alt="Logo" />
                     </Link>
 
                     {/* Right — Icons */}
@@ -85,29 +99,44 @@ const Navbar = () => {
 
                         {/* ── Auth ── */}
                         {!token ? (
-                            /* Not logged in → "Login Now" direct button, no dropdown */
-                            <button
-                                onClick={() => navigate('/login')}
-                                className='flex items-center gap-1.5 px-3 sm:px-4 py-1.5 border border-black text-xs sm:text-sm font-medium rounded-full hover:bg-black hover:text-white transition-all duration-200'
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className='w-3.5 h-3.5 shrink-0' viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                                </svg>
-                                Login Now
-                            </button>
-                        ) : (
-                            /* Logged in → Account dropdown */
+                            // NOT logged in → "Login Now" dropdown
                             <div className='relative'>
                                 <button
                                     onClick={() => setProfileOpen(!profileOpen)}
-                                    className='flex items-center gap-2 px-3 py-1.5 border border-gray-200 text-sm font-medium rounded-full hover:border-black transition-all duration-200 bg-white'
+                                    className='flex items-center gap-1.5 px-3 sm:px-4 py-1.5 border border-black text-xs sm:text-sm font-medium rounded-full hover:bg-black hover:text-white transition-all duration-200'
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4 text-gray-700' viewBox="0 0 24 24" fill="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className='w-3.5 h-3.5 shrink-0' viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                                     </svg>
-                                    <span className='hidden sm:inline text-gray-700'>Account</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M7 10l5 5 5-5z"/>
+                                    Login Now
+                                </button>
+
+                                {profileOpen && <div className='fixed inset-0 z-10' onClick={() => setProfileOpen(false)} />}
+
+                                {profileOpen && (
+                                    <div className='absolute right-0 mt-2 z-20 w-44 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden'>
+                                        <button
+                                            onClick={() => { navigate('/login'); setProfileOpen(false); }}
+                                            className='w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors font-medium'
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4 text-gray-400' viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                                            </svg>
+                                            Login Now
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // LOGGED IN → person icon only
+                            <div className='relative'>
+                                <button
+                                    onClick={() => setProfileOpen(!profileOpen)}
+                                    className='w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors'
+                                    aria-label="Account"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className='w-5 h-5 text-gray-700' viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                                     </svg>
                                 </button>
 
@@ -229,6 +258,47 @@ const Navbar = () => {
                     className='fixed inset-0 z-40 bg-black/30 sm:hidden'
                     onClick={() => setVisible(false)}
                 />
+            )}
+
+            {/* ── 20-second Login Prompt Popup ── */}
+            {loginPrompt && (
+                <>
+                    <div className='fixed inset-0 z-50 bg-black/40 backdrop-blur-sm' onClick={() => setLoginPrompt(false)} />
+                    <div className='fixed z-50 bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4'>
+                        <button
+                            onClick={() => setLoginPrompt(false)}
+                            className='absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors'
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4' viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                        <div className='w-10 h-10 rounded-full bg-black flex items-center justify-center'>
+                            <svg xmlns="http://www.w3.org/2000/svg" className='w-5 h-5 text-white' viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p className='text-base font-semibold text-gray-900'>Sign in to your account</p>
+                            <p className='text-sm text-gray-500 mt-1'>Log in to track orders, save favourites, and check out faster.</p>
+                        </div>
+                        <div className='flex gap-2'>
+                            <button
+                                onClick={() => { navigate('/login'); setLoginPrompt(false); }}
+                                className='flex-1 py-2.5 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors'
+                            >
+                                Login Now
+                            </button>
+                            <button
+                                onClick={() => setLoginPrompt(false)}
+                                className='flex-1 py-2.5 border border-gray-200 text-sm text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors'
+                            >
+                                Maybe Later
+                            </button>
+                        </div>
+                    </div>
+                </>
             )}
         </>
     )
