@@ -14,9 +14,9 @@ const Verify = () => {
 
   useEffect(() => {
     if (success === 'true' && orderId) {
-      // Payment confirmed by backend — clear cart and show success
       setCartItems({})
       setStatus('success')
+      setTimeout(() => navigate('/'), 2000)
     } else {
       setStatus('failed')
     }
@@ -56,6 +56,7 @@ const Verify = () => {
             {orderId && (
               <p className='text-xs text-gray-400 mt-2'>Order ID: <span className='font-mono'>{orderId}</span></p>
             )}
+            <p className='text-xs text-gray-400 mt-3'>Redirecting you to home...</p>
           </div>
 
           <div className='flex gap-3 w-full mt-2'>
