@@ -96,7 +96,7 @@ const placeOrderPayU = async (req, res) => {
       date: Date.now()
     });
 
-    console.log("✅ Order created with txnid:", txnid, "Order ID:", order._id);
+    console.log("Order created with txnid:", txnid, "Order ID:", order._id);
 
     res.json({
       success: true,
@@ -115,7 +115,7 @@ const placeOrderPayU = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("❌ placeOrderPayU error:", error);
+    console.error("placeOrderPayU error:", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -123,26 +123,26 @@ const placeOrderPayU = async (req, res) => {
 /* -------------------- PAYU VERIFY -------------------- */
 const verifyPayU = async (req, res) => {
   try {
-    console.log("🔔 PayU callback received:", req.body);
+    console.log("PayU callback received:", req.body);
 
     const status = req.body?.status;
     const txnid = req.body?.txnid;
     const frontendUrl = getFrontendUrl();
 
     if (!status || !txnid) {
-      console.error("❌ Invalid PayU callback payload:", req.body);
+      console.error("Invalid PayU callback payload:", req.body);
       return res.redirect(`${frontendUrl}/verify?success=false&reason=invalid`);
     }
 
-    console.log("🔍 Looking for order with txnid:", txnid);
+    console.log("Looking for order with txnid:", txnid);
     const order = await orderModel.findOne({ txnid });
 
     if (!order) {
-      console.error("❌ Order not found for txnid:", txnid);
+      console.error("Order not found for txnid:", txnid);
       return res.redirect(`${frontendUrl}/verify?success=false&reason=notfound`);
     }
 
-    console.log("✅ Order found:", order._id);
+    console.log("Order found:", order._id);
 
     if (status === "success") {
       // ── Payment succeeded ──
@@ -154,9 +154,8 @@ const verifyPayU = async (req, res) => {
 
       sendOrderEmail(order.userId, order._id, order).catch(console.error);
 
-      console.log("✅ Payment successful for txnid:", txnid);
-      // Pass orderId so Verify.jsx can display order details
-      return res.redirect(`${frontendUrl}/verify?success=true&orderId=${order._id}`);
+      console.log("Payment successful for txnid:", txnid);
+      return res.redirect(`${frontendUrl}/orders`); // ← CHANGED: go directly to orders page
     }
 
     // ── Payment failed — mark as Failed, keep in DB for audit ──
@@ -164,11 +163,11 @@ const verifyPayU = async (req, res) => {
     order.status = "Failed";
     await order.save();
 
-    console.log("❌ Payment failed for txnid:", txnid, "Status:", status);
+    console.log("Payment failed for txnid:", txnid, "Status:", status);
     return res.redirect(`${frontendUrl}/verify?success=false&orderId=${order._id}`);
 
   } catch (error) {
-    console.error("❌ PayU verify error:", error);
+    console.error("PayU verify error:", error);
     return res.redirect(`${getFrontendUrl()}/verify?success=false&reason=error`);
   }
 };
@@ -176,7 +175,6 @@ const verifyPayU = async (req, res) => {
 /* -------------------- ADMIN -------------------- */
 const allOrders = async (req, res) => {
   try {
-    // Exclude Failed orders from admin panel too
     const orders = await orderModel.find({ status: { $ne: "Failed" } });
     res.json({ success: true, orders });
   } catch (error) {
@@ -186,7 +184,6 @@ const allOrders = async (req, res) => {
 
 const userOrders = async (req, res) => {
   try {
-    // Exclude Failed orders from customer view
     const orders = await orderModel.find({
       userId: req.userId,
       status: { $ne: "Failed" }
