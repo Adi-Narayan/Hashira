@@ -145,7 +145,6 @@ const verifyPayU = async (req, res) => {
     console.log("Order found:", order._id);
 
     if (status === "success") {
-      // ── Payment succeeded ──
       order.payment = true;
       order.status = "Order Placed";
       await order.save();
@@ -155,10 +154,10 @@ const verifyPayU = async (req, res) => {
       sendOrderEmail(order.userId, order._id, order).catch(console.error);
 
       console.log("Payment successful for txnid:", txnid);
-      return res.redirect(`${frontendUrl}/orders`); // ← CHANGED: go directly to orders page
+      // ✅ Go through /verify so React app boots with auth before navigating to /orders
+      return res.redirect(`${frontendUrl}/verify?success=true&orderId=${order._id}`);
     }
 
-    // ── Payment failed — mark as Failed, keep in DB for audit ──
     order.payment = false;
     order.status = "Failed";
     await order.save();

@@ -10,13 +10,14 @@ const Verify = () => {
   const reason = searchParams.get('reason')
   const { navigate, setCartItems } = useContext(ShopContext)
 
-  const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'failed'
+  const [status, setStatus] = useState('loading')
 
   useEffect(() => {
-    if (success === 'true' && orderId) {
+    if (success === 'true') {
       setCartItems({})
       setStatus('success')
-      setTimeout(() => navigate('/'), 2000)
+      // ✅ SPA navigation — auth context is already hydrated by this point
+      setTimeout(() => navigate('/orders'), 2000)
     } else {
       setStatus('failed')
     }
@@ -56,7 +57,7 @@ const Verify = () => {
             {orderId && (
               <p className='text-xs text-gray-400 mt-2'>Order ID: <span className='font-mono'>{orderId}</span></p>
             )}
-            <p className='text-xs text-gray-400 mt-3'>Redirecting you to home...</p>
+            <p className='text-xs text-gray-400 mt-3'>Redirecting you to your orders...</p>
           </div>
 
           <div className='flex gap-3 w-full mt-2'>
