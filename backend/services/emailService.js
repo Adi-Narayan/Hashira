@@ -1,6 +1,5 @@
 // backend/services/emailService.js
 
-// Helper to send email via Brevo REST API
 const sendEmail = async (to, subject, html) => {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -12,7 +11,7 @@ const sendEmail = async (to, subject, html) => {
     body: JSON.stringify({
       sender: { name: 'Hashira', email: process.env.BREVO_EMAIL },
       to: [{ email: to }],
-      subject: subject,
+      subject,
       htmlContent: html
     })
   });
@@ -25,176 +24,183 @@ const sendEmail = async (to, subject, html) => {
   return response.json();
 };
 
-console.log('Email service ready');
+// Resolves name whether caller passes a built emailData object or a raw order doc
+const resolveName = (orderDetails) => {
+  if (orderDetails.customerName) return orderDetails.customerName;
+  if (orderDetails.address?.firstName) {
+    return `${orderDetails.address.firstName} ${orderDetails.address.lastName || ''}`.trim();
+  }
+  return 'there';
+};
 
-// Welcome email template
+const baseStyles = `
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f4f4f4; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1a1a1a; }
+    .wrap { max-width: 560px; margin: 40px auto; background: #ffffff; border: 1px solid #e0e0e0; }
+    .header { padding: 32px 40px 28px; border-bottom: 1px solid #e0e0e0; }
+    .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: #1a1a1a; }
+    .header p { font-size: 13px; color: #888; margin-top: 4px; }
+    .body { padding: 32px 40px; }
+    .body p { font-size: 14px; line-height: 1.7; color: #333; }
+    .section { margin-top: 28px; padding-top: 24px; border-top: 1px solid #ebebeb; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+    .field { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .field:last-child { border-bottom: none; }
+    .field .label { color: #888; }
+    .field .value { color: #1a1a1a; font-weight: 500; text-align: right; max-width: 60%; }
+    .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .item:last-child { border-bottom: none; }
+    .item-name { color: #1a1a1a; font-weight: 500; }
+    .item-meta { color: #999; font-size: 12px; margin-top: 2px; }
+    .item-price { color: #1a1a1a; font-weight: 500; white-space: nowrap; }
+    .total-row { display: flex; justify-content: space-between; padding-top: 14px; font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .status-block { display: inline-block; padding: 6px 14px; background: #f4f4f4; border: 1px solid #e0e0e0; font-size: 13px; font-weight: 500; color: #1a1a1a; margin: 16px 0; }
+    .address { font-size: 13px; line-height: 1.8; color: #555; }
+    .footer { padding: 20px 40px; border-top: 1px solid #e0e0e0; background: #fafafa; font-size: 12px; color: #aaa; }
+  </style>
+`;
+
+// ─── Welcome Email ────────────────────────────────────────────────────────────
+
 const getWelcomeEmailTemplate = (userName, frontendUrl = 'https://hashira.in') => `
 <!DOCTYPE html>
 <html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-    .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-  </style>
-</head>
+<head>${baseStyles}</head>
 <body>
-  <div class="container">
+  <div class="wrap">
     <div class="header">
-      <h1>Welcome to Hashira!</h1>
+      <h1>Hashira</h1>
+      <p>Welcome to the store</p>
     </div>
-    <div class="content">
-      <h2>Hi ${userName}!</h2>
-      <p>Thank you for joining Hashira. We're excited to have you as part of our community!</p>
-      <p>Your account has been successfully created. You can now:</p>
-      <ul>
-        <li>Browse our exclusive collection</li>
-        <li>Add items to your cart</li>
-        <li>Track your orders</li>
-        <li>Manage your profile</li>
-      </ul>
-      <center>
-        <a href="${frontendUrl}" class="button">Start Shopping</a>
-      </center>
-      <p>If you have any questions, feel free to reach out to our support team.</p>
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Hashira. All rights reserved.</p>
-      <p>This is an automated message, please do not reply.</p>
-    </div>
-  </div>
-</body>
-</html>
-`;
-
-// Order confirmation email template
-const getOrderConfirmationTemplate = (orderDetails) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #4CAF50; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; }
-    .order-box { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #ddd; }
-    .item { padding: 10px 0; border-bottom: 1px solid #eee; }
-    .total { font-size: 18px; font-weight: bold; color: #4CAF50; margin-top: 15px; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Order Confirmed! ✓</h1>
-    </div>
-    <div class="content">
-      <h2>Thank you for your order!</h2>
-      <p>Hi ${orderDetails.customerName},</p>
-      <p>We've received your order and will process it soon.</p>
-      
-      <div class="order-box">
-        <h3>Order Details</h3>
-        <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-        <p><strong>Date:</strong> ${new Date(orderDetails.date).toLocaleDateString()}</p>
-        <p><strong>Payment Method:</strong> ${orderDetails.paymentMethod}</p>
-        <p><strong>Payment Status:</strong> ${orderDetails.payment ? 'Paid' : 'Pending'}</p>
-        
-        <h4 style="margin-top: 20px;">Items:</h4>
-        ${orderDetails.items.map(item => `
-          <div class="item">
-            <strong>${item.name}</strong> - Qty: ${item.quantity} - Size: ${item.size}
-          </div>
-        `).join('')}
-        
-        <p class="total">Total Amount: ₹${orderDetails.amount}</p>
-        
-        <h4 style="margin-top: 20px;">Shipping Address:</h4>
-        <p>
-          ${orderDetails.address.street}<br>
-          ${orderDetails.address.city}, ${orderDetails.address.state}<br>
-          ${orderDetails.address.zipcode}<br>
-          Phone: ${orderDetails.address.phone}
-        </p>
+    <div class="body">
+      <p>Hi ${userName},</p>
+      <p style="margin-top:12px;">Your account is set up. You can now browse the collection, place orders, and track your deliveries from your account page.</p>
+      <div class="section">
+        <a href="${frontendUrl}" style="display:inline-block;margin-top:4px;padding:10px 24px;background:#1a1a1a;color:#fff;text-decoration:none;font-size:13px;font-weight:500;">
+          Go to Store
+        </a>
       </div>
-      
-      <p>You'll receive another email when your order ships.</p>
     </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Hashira. All rights reserved.</p>
-    </div>
+    <div class="footer">Hashira &mdash; ${new Date().getFullYear()}. This is an automated message.</div>
   </div>
 </body>
 </html>
 `;
 
-// Order status update email template
-const getOrderStatusTemplate = (orderDetails, status) => {
-  const statusConfig = {
-    'Order Placed': { color: '#2196F3', icon: '📦', message: 'Your order has been placed successfully!' },
-    'Packing': { color: '#FF9800', icon: '📦', message: 'Your order is being packed with care.' },
-    'Shipped': { color: '#9C27B0', icon: '🚚', message: 'Your order is on its way!' },
-    'Out for delivery': { color: '#FF5722', icon: '🚚', message: 'Your order will be delivered soon!' },
-    'Delivered': { color: '#4CAF50', icon: '✅', message: 'Your order has been delivered!' }
-  };
+// ─── Order Confirmation ───────────────────────────────────────────────────────
 
-  const config = statusConfig[status] || statusConfig['Order Placed'];
+const getOrderConfirmationTemplate = (orderDetails) => {
+  const name = resolveName(orderDetails);
+  const { address } = orderDetails;
 
   return `
 <!DOCTYPE html>
 <html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: ${config.color}; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-    .status-badge { background: ${config.color}; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin: 15px 0; }
-    .order-info { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid ${config.color}; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-  </style>
-</head>
+<head>${baseStyles}</head>
 <body>
-  <div class="container">
+  <div class="wrap">
     <div class="header">
-      <h1>${config.icon} Order Status Update</h1>
+      <h1>Order Confirmed</h1>
+      <p>We've received your order and will process it shortly</p>
     </div>
-    <div class="content">
-      <h2>Hi ${orderDetails.customerName}!</h2>
-      <p>${config.message}</p>
-      
-      <div class="status-badge">
-        Status: ${status}
+    <div class="body">
+      <p>Hi ${name},</p>
+
+      <div class="section">
+        <div class="section-label">Order Info</div>
+        <div class="field"><span class="label">Order ID</span><span class="value">${orderDetails.orderId}</span></div>
+        <div class="field"><span class="label">Date</span><span class="value">${new Date(orderDetails.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
+        <div class="field"><span class="label">Payment</span><span class="value">${orderDetails.paymentMethod} &mdash; ${orderDetails.payment ? 'Paid' : 'Pending'}</span></div>
       </div>
-      
-      <div class="order-info">
-        <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-        <p><strong>Order Date:</strong> ${new Date(orderDetails.date).toLocaleDateString()}</p>
-        <p><strong>Total Amount:</strong> ₹${orderDetails.amount}</p>
+
+      <div class="section">
+        <div class="section-label">Items</div>
+        ${orderDetails.items.map(item => `
+          <div class="item">
+            <div>
+              <div class="item-name">${item.name}</div>
+              <div class="item-meta">Size: ${item.size} &nbsp;&middot;&nbsp; Qty: ${item.quantity}</div>
+            </div>
+            <div class="item-price">&#8377;${item.price}</div>
+          </div>
+        `).join('')}
+        <div class="total-row">
+          <span>Total</span>
+          <span>&#8377;${orderDetails.amount}</span>
+        </div>
       </div>
-      
-      ${status === 'Delivered' ? 
-        '<p>We hope you enjoy your purchase! Please let us know if you have any feedback.</p>' :
-        '<p>You can track your order anytime from your account dashboard.</p>'
-      }
+
+      <div class="section">
+        <div class="section-label">Shipping Address</div>
+        <div class="address">
+          ${address.street}<br>
+          ${address.city}, ${address.state} &mdash; ${address.zipcode}<br>
+          ${address.phone}
+        </div>
+      </div>
+
+      <p style="margin-top:28px;font-size:13px;color:#888;">You'll get another email when your order ships.</p>
     </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Hashira. All rights reserved.</p>
-    </div>
+    <div class="footer">Hashira &mdash; ${new Date().getFullYear()}. This is an automated message.</div>
   </div>
 </body>
 </html>
 `;
 };
 
-// Send welcome email
+// ─── Order Status Update ──────────────────────────────────────────────────────
+
+const getOrderStatusTemplate = (orderDetails, status) => {
+  const name = resolveName(orderDetails);
+
+  const statusMessages = {
+    'Order Placed':     'Your order has been placed and is being reviewed.',
+    'Packing':          'Your order is being packed.',
+    'Shipped':          'Your order has been shipped and is on its way.',
+    'Out for Delivery': 'Your order is out for delivery today.',
+    'Delivered':        'Your order has been delivered.'
+  };
+
+  const message = statusMessages[status] || 'Your order status has been updated.';
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>${baseStyles}</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Order Update</h1>
+      <p>${message}</p>
+    </div>
+    <div class="body">
+      <p>Hi ${name},</p>
+      <p style="margin-top:12px;">${message}</p>
+
+      <div class="status-block">${status}</div>
+
+      <div class="section">
+        <div class="section-label">Order Info</div>
+        <div class="field"><span class="label">Order ID</span><span class="value">${orderDetails._id || orderDetails.orderId}</span></div>
+        <div class="field"><span class="label">Date</span><span class="value">${new Date(orderDetails.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
+        <div class="field"><span class="label">Total</span><span class="value">&#8377;${orderDetails.amount}</span></div>
+      </div>
+
+      ${status === 'Delivered' ? `<p style="margin-top:24px;font-size:13px;color:#888;">If you have any questions about your order, reply to this email.</p>` : `<p style="margin-top:24px;font-size:13px;color:#888;">You can track your order from your account dashboard.</p>`}
+    </div>
+    <div class="footer">Hashira &mdash; ${new Date().getFullYear()}. This is an automated message.</div>
+  </div>
+</body>
+</html>
+`;
+};
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
+
 export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https://hashira.in') => {
   try {
-    await sendEmail(userEmail, 'Welcome to Hashira! 🎉', getWelcomeEmailTemplate(userName, frontendUrl));
-    console.log(`Welcome email sent to ${userEmail}`);
+    await sendEmail(userEmail, 'Welcome to Hashira', getWelcomeEmailTemplate(userName, frontendUrl));
     return { success: true };
   } catch (error) {
     console.error('Error sending welcome email:', error);
@@ -202,11 +208,9 @@ export const sendWelcomeEmail = async (userEmail, userName, frontendUrl = 'https
   }
 };
 
-// Send order confirmation email
 export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
   try {
-    await sendEmail(userEmail, `Order Confirmation - #${orderDetails.orderId}`, getOrderConfirmationTemplate(orderDetails));
-    console.log(`Order confirmation sent to ${userEmail}`);
+    await sendEmail(userEmail, `Order Confirmed — #${orderDetails.orderId}`, getOrderConfirmationTemplate(orderDetails));
     return { success: true };
   } catch (error) {
     console.error('Error sending order confirmation:', error);
@@ -214,11 +218,9 @@ export const sendOrderConfirmationEmail = async (userEmail, orderDetails) => {
   }
 };
 
-// Send order status update email
 export const sendOrderStatusEmail = async (userEmail, orderDetails, status) => {
   try {
-    await sendEmail(userEmail, `Order Status Update - ${status}`, getOrderStatusTemplate(orderDetails, status));
-    console.log(`Order status email sent to ${userEmail}`);
+    await sendEmail(userEmail, `Order Update — ${status}`, getOrderStatusTemplate(orderDetails, status));
     return { success: true };
   } catch (error) {
     console.error('Error sending status email:', error);
