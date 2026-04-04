@@ -4,72 +4,82 @@ import axios from 'axios'
 import { backendUrl } from '../App'
 import { toast } from 'react-toastify'
 
-const Login = ({setToken}) => {
+const Login = ({ setToken }) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-    const [email,setEmail] = useState('')
-    const [password,setPassword] = useState('')
-
-    const onSubmitHandler = async (e) => {
-        try {
-            e.preventDefault();
-            const response = await axios.post(backendUrl + '/api/user/admin',{email,password})
-            console.log(response);
-            if (response.data.success) {
-              setToken(response.data.token)
-            }
-            else {
-              toast.error(response.data.message)
-            }
-        }
-        catch (error) {
-          console.log(error);
-          toast.error(error.message)
-        }
+  const onSubmitHandler = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const response = await axios.post(backendUrl + '/api/user/admin', { email, password })
+      if (response.data.success) {
+        setToken(response.data.token)
+      } else {
+        toast.error(response.data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
   return (
+    <div className='min-h-screen bg-zinc-950 flex items-center justify-center px-4'>
+      <div className='w-full max-w-sm'>
 
-    <div className='relative min-h-screen flex items-center justify-center w-full bg-gray-100'>
+        {/* Logo */}
+        <div className='flex justify-center mb-10'>
+          <img src={assets.logo} alt='Logo' className='h-8 object-contain brightness-0 invert' />
+        </div>
 
-      {/* Watermark Logo */}
-      <img
-        src={assets.logo}
-        alt="Watermark"
-        className='absolute opacity-50 w-320 h-320 object-contain z-0'
-        style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-      />
+        {/* Card */}
+        <div className='bg-zinc-900 border border-zinc-800 rounded-xl p-8'>
+          <h1 className='text-zinc-100 text-lg font-semibold mb-1 tracking-tight'>Admin Panel</h1>
+          <p className='text-zinc-500 text-sm mb-7'>Sign in to manage your store</p>
 
-      {/* Login Form */}
-      <div className='bg-white shadow-md rounded-lg px-8 py-6 max-w-md w-full z-10'>
-        <h1 className='text-2xl font-bold mb-4 text-center'>Admin Panel</h1>
-        <form onSubmit={onSubmitHandler}>
-          <div className='mb-3'>
-            <p className='text-sm font-medium text-gray-700 mb-2'>Email Address</p>
-            <input onChange={(e)=>setEmail(e.target.value)} value={email} 
-              className='rounded-md w-full px-3 py-2 border border-gray-300 outline-none'
-              type="email"
-              placeholder='Email'
-              required
-            />
-          </div>
+          <form onSubmit={onSubmitHandler} className='flex flex-col gap-4'>
+            <div>
+              <label className='block text-zinc-400 text-xs font-medium mb-2 uppercase tracking-widest'>
+                Email
+              </label>
+              <input
+                type='email'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder='admin@example.com'
+                required
+                className='w-full bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors'
+              />
+            </div>
 
-          <div className='mb-3'>
-            <p className='text-sm font-medium text-gray-700 mb-2'>Password</p>
-            <input onChange={(e)=>setPassword(e.target.value)} value={password}
-              className='rounded-md w-full px-3 py-2 border border-gray-300 outline-none'
-              type="password"
-              placeholder='Password'
-              required
-            />
-          </div>
+            <div>
+              <label className='block text-zinc-400 text-xs font-medium mb-2 uppercase tracking-widest'>
+                Password
+              </label>
+              <input
+                type='password'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder='••••••••'
+                required
+                className='w-full bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-600 transition-colors'
+              />
+            </div>
 
-          <button
-            className='mt-2 w-full py-2 px-4 rounded-md text-white bg-black'
-            type="submit"
-          >
-            Login
-          </button>
-        </form>
+            <button
+              type='submit'
+              disabled={loading}
+              className='mt-2 w-full bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+
+        <p className='text-center text-zinc-700 text-xs mt-6'>Hashira Admin — Restricted Access</p>
       </div>
     </div>
   )
