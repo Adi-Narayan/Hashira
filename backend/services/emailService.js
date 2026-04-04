@@ -182,9 +182,9 @@ const getOrderStatusTemplate = (orderDetails, status) => {
 
       <div class="section">
         <div class="section-label">Order Info</div>
-        <div class="field"><span class="label">Order ID</span><span class="value">${orderDetails._id || orderDetails.orderId}</span></div>
-        <div class="field"><span class="label">Date</span><span class="value">${new Date(orderDetails.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
-        <div class="field"><span class="label">Total</span><span class="value">&#8377;${orderDetails.amount}</span></div>
+        <div class="field"><span class="label">Order ID </span><span class="value">${orderDetails._id || orderDetails.orderId}</span></div>
+        <div class="field"><span class="label">Date </span><span class="value">${new Date(orderDetails.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
+        <div class="field"><span class="label">Total </span><span class="value">&#8377;${orderDetails.amount}</span></div>
       </div>
 
       ${status === 'Delivered' ? `<p style="margin-top:24px;font-size:13px;color:#888;">If you have any questions about your order, reply to this email.</p>` : `<p style="margin-top:24px;font-size:13px;color:#888;">You can track your order from your account dashboard.</p>`}
