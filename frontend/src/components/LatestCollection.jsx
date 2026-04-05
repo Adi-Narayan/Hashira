@@ -3,7 +3,7 @@ import { ShopContext } from '../context/ShopContext';
 import Title from './Title'
 import ProductItem from './ProductItem';
 
-const PAGE_SIZE_DESKTOP = 10
+const PAGE_SIZE_DESKTOP = 12
 const PAGE_SIZE_MOBILE = 12
 
 const PaginationBar = ({ page, totalPages, setPage }) => (

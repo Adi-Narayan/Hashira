@@ -11,7 +11,6 @@ const BestSeller = () => {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    // Fixed: was item.bestseller (always undefined) — model field is bestSeller
     const bestProduct = products.filter((item) => item.bestSeller);
     setBestSeller(bestProduct.slice(0, 10));
     setPage(0);
@@ -29,13 +28,18 @@ const BestSeller = () => {
         </p>
       </div>
 
-      {/* Mobile & Tablet — horizontal scroll */}
+      {/* Mobile & Tablet — grid with pagination */}
       <div className='lg:hidden'>
-        <div className='flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide px-1'>
+        <div className='grid grid-cols-2 sm:grid-cols-3 gap-4 gap-y-6'>
           {bestSeller.map((item, index) => (
-            <div key={index} className='snap-start flex-shrink-0 w-40 sm:w-48'>
-              <ProductItem id={item._id} name={item.name} image={item.image} price={item.price} />
-            </div>
+            <ProductItem
+              key={index}
+              id={item._id}
+              name={item.name}
+              image={item.image}
+              price={item.price}
+              originalPrice={item.originalPrice}
+            />
           ))}
         </div>
       </div>
@@ -44,7 +48,14 @@ const BestSeller = () => {
       <div className='hidden lg:block'>
         <div className='grid grid-cols-5 gap-4 gap-y-6'>
           {paginated.map((item, index) => (
-            <ProductItem key={index} id={item._id} name={item.name} image={item.image} price={item.price} />
+            <ProductItem
+              key={index}
+              id={item._id}
+              name={item.name}
+              image={item.image}
+              price={item.price}
+              originalPrice={item.originalPrice}
+            />
           ))}
         </div>
 
