@@ -27,7 +27,7 @@ const Collection = () => {
   const [filterProducts, setFilterProducts] = useState([]);
   const [category, setCategory] = useState([]);
   const [subCategory, setSubCategory] = useState([]);
-  const [sortType, setSortType] = useState('high-low');
+  const [sortType, setSortType] = useState('relevance');
 
   const toggleCategory = (e) => {
     const val = e.target.value
@@ -86,10 +86,10 @@ const Collection = () => {
   useEffect(() => { sortProduct() }, [sortType])
 
   return (
-    <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t'>
+    <div className='flex flex-col sm:flex-row gap-4 sm:gap-10 pt-10 border-t'>
 
       {/* ── Filter Sidebar ── */}
-      <div className='min-w-60'>
+      <div className='w-full sm:min-w-60 sm:w-60'>
 
         {/* Mobile toggle */}
         <button
@@ -110,53 +110,22 @@ const Collection = () => {
           <div className='border border-gray-300 pl-5 pr-4 py-4 my-5'>
             <p className='mb-3 text-xs font-semibold tracking-widest text-gray-500 uppercase'>Category</p>
             <div className='flex flex-col gap-3'>
-              <FilterCheckbox
-                value='Men'
-                label='Men'
-                checked={category.includes('Men')}
-                onChange={toggleCategory}
-              />
-              <FilterCheckbox
-                value='Women'
-                label='Women'
-                checked={category.includes('Women')}
-                onChange={toggleCategory}
-              />
-              <FilterCheckbox
-                value='Unisex'
-                label='Unisex'
-                checked={category.includes('Unisex')}
-                onChange={toggleCategory}
-              />
+              <FilterCheckbox value='Men' label='Men' checked={category.includes('Men')} onChange={toggleCategory} />
+              <FilterCheckbox value='Women' label='Women' checked={category.includes('Women')} onChange={toggleCategory} />
+              <FilterCheckbox value='Unisex' label='Unisex' checked={category.includes('Unisex')} onChange={toggleCategory} />
             </div>
           </div>
 
-          {/* Sub-Category / Type */}
+          {/* Sub-Category */}
           <div className='border border-gray-300 pl-5 pr-4 py-4 my-5'>
             <p className='mb-3 text-xs font-semibold tracking-widest text-gray-500 uppercase'>Type</p>
             <div className='flex flex-col gap-3'>
-              <FilterCheckbox
-                value='Topwear'
-                label='Topwear'
-                checked={subCategory.includes('Topwear')}
-                onChange={toggleSubCategory}
-              />
-              <FilterCheckbox
-                value='Bottomwear'
-                label='Bottomwear'
-                checked={subCategory.includes('Bottomwear')}
-                onChange={toggleSubCategory}
-              />
-              <FilterCheckbox
-                value='Accessories'
-                label='Accessories'
-                checked={subCategory.includes('Accessories')}
-                onChange={toggleSubCategory}
-              />
+              <FilterCheckbox value='Topwear' label='Topwear' checked={subCategory.includes('Topwear')} onChange={toggleSubCategory} />
+              <FilterCheckbox value='Bottomwear' label='Bottomwear' checked={subCategory.includes('Bottomwear')} onChange={toggleSubCategory} />
+              <FilterCheckbox value='Accessories' label='Accessories' checked={subCategory.includes('Accessories')} onChange={toggleSubCategory} />
             </div>
           </div>
 
-          {/* Clear filters — only shown when something is active */}
           {(category.length > 0 || subCategory.length > 0) && (
             <button
               onClick={() => { setCategory([]); setSubCategory([]) }}
@@ -169,19 +138,20 @@ const Collection = () => {
       </div>
 
       {/* ── Product Grid ── */}
-      <div className='flex-1'>
-        <div className='flex justify-between items-center text-base sm:text-2xl mb-4'>
-          <div>
+      <div className='flex-1 min-w-0'>
+        {/* Header row — stacks on mobile to prevent overflow */}
+        <div className='flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-4'>
+          <div className='text-base sm:text-2xl'>
             <span className='text-gray-400 font-light'>ALL </span>
             <span className='font-medium'>COLLECTIONS</span>
-            <span className='text-sm font-normal text-gray-400 ml-3'>
+            <span className='text-sm font-normal text-gray-400 ml-2'>
               ({filterProducts.length} items)
             </span>
           </div>
           <select
             onChange={(e) => setSortType(e.target.value)}
             value={sortType}
-            className='border border-gray-300 text-sm px-3 py-1.5 text-gray-600 focus:outline-none focus:border-gray-500'
+            className='border border-gray-300 text-sm px-3 py-1.5 text-gray-600 focus:outline-none focus:border-gray-500 w-full xs:w-auto'
           >
             <option value='relevance'>Sort: Relevance</option>
             <option value='low-high'>Price: Low to High</option>
