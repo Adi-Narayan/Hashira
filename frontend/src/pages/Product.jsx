@@ -4,7 +4,7 @@ import { ShopContext } from '../context/ShopContext';
 import RelatedProducts from '../components/RelatedProducts';
 // Drop your size chart image into src/assets/ as size_chart.png
 // When the chart is updated, just replace that file — no code changes needed
-import sizeChartImg from '../assets/size_chart.png';
+import sizeChartImg from '../assets/size_chart.jpeg';
 
 // Size chart link only appears for Topwear — add 'Bottomwear' here when that chart is ready
 const SIZE_CHART_SUBCATEGORIES = new Set(['Topwear']);
