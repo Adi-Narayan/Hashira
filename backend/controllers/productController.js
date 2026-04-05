@@ -24,7 +24,7 @@ const addProduct = async (req, res) => {
             name,
             description,
             category,
-            price:Number(price),
+            price: Number(price),
             subCategory,
             bestSeller: bestSeller === "true" ? true : false,
             sizes: JSON.parse(sizes),
@@ -32,29 +32,76 @@ const addProduct = async (req, res) => {
             date: Date.now()
         }
 
-        console.log(productData);
-
         const product = new productModel(productData);
         await product.save()
 
-        res.json({success:true, message:"Product Added"})
+        res.json({success: true, message: "Product Added"})
     }
     catch (error) {
         console.log(error)
-        res.json({success:false, message:error.message})
+        res.json({success: false, message: error.message})
+    }
+}
+
+//  Edit product
+const editProduct = async (req, res) => {
+    try {
+        const { id, name, description, price, originalPrice, category, subCategory, sizes, bestSeller, existingImages } = req.body
+
+        // existingImages is a JSON array of the current Cloudinary URLs,
+        // one entry per slot. If a new file was uploaded for a slot, we
+        // upload it and replace that slot; otherwise we keep the existing URL.
+        const existing = JSON.parse(existingImages || '[]')
+
+        const slots = ['image1', 'image2', 'image3', 'image4']
+        const finalImages = []
+
+        for (let i = 0; i < slots.length; i++) {
+            const newFile = req.files?.[slots[i]]?.[0]
+            if (newFile) {
+                const result = await cloudinary.uploader.upload(newFile.path, { resource_type: 'image' })
+                finalImages.push(result.secure_url)
+            } else if (existing[i]) {
+                finalImages.push(existing[i])
+            }
+            // if neither — slot is dropped (image was removed)
+        }
+
+        const updates = {
+            name,
+            description,
+            price: Number(price),
+            category,
+            subCategory,
+            bestSeller: bestSeller === "true" ? true : false,
+            sizes: JSON.parse(sizes),
+            image: finalImages,
+        }
+
+        // Only update originalPrice if a value was sent; clear it if empty string
+        if (originalPrice !== undefined) {
+            updates.originalPrice = originalPrice === '' ? undefined : Number(originalPrice)
+        }
+
+        await productModel.findByIdAndUpdate(id, updates)
+
+        res.json({ success: true, message: "Product Updated" })
+    }
+    catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
 }
 
 //  List product
 const listProduct = async (req, res) => {
     try {
-
         const products = await productModel.find({});
-        res.json({success:true, products})
+        res.json({success: true, products})
     }
     catch (error) {
         console.log(error)
-        res.json({success:false, message:error.message})
+        res.json({success: false, message: error.message})
     }
 }
 
@@ -62,25 +109,25 @@ const listProduct = async (req, res) => {
 const removeProduct = async (req, res) => {
     try {
         await productModel.findByIdAndDelete(req.body.id)
-        res.json({success:true, message:"Product Removed"})
+        res.json({success: true, message: "Product Removed"})
     }
     catch (error) {
         console.log(error)
-        res.json({success:false, message:error.message})
+        res.json({success: false, message: error.message})
     }
 }
 
-//  single product info
+//  Single product info
 const singleProduct = async (req, res) => {
     try {
         const { productId } = req.body
         const product = await productModel.findById(productId)
-        res.json({success:true, product})
+        res.json({success: true, product})
     }
     catch (error) {
         console.log(error)
-        res.json({success:false, message:error.message})
+        res.json({success: false, message: error.message})
     }
 }
 
-export { addProduct, listProduct, removeProduct, singleProduct }
+export { addProduct, editProduct, listProduct, removeProduct, singleProduct }
