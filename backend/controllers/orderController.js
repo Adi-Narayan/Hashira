@@ -14,29 +14,19 @@ const getFrontendUrl = () => {
   return urls[0] || process.env.DEFAULT_FRONTEND_URL;
 };
 
-const sendOrderEmail = async (userId, orderId, orderData) => {
-  try {
-    const user = await userModel.findById(userId);
-    if (!user || !user.email) return;
-
-    const emailData = {
-      orderId,
-      customerName: orderData.address?.firstName && orderData.address?.lastName
-        ? `${orderData.address.firstName} ${orderData.address.lastName}`
-        : user.name,
-      date: orderData.date,
-      paymentMethod: orderData.paymentMethod,
-      payment: orderData.payment,
-      items: orderData.items,
-      amount: orderData.amount,
-      address: orderData.address
-    };
-
-    await sendOrderConfirmationEmail(user.email, emailData);
-  } catch (error) {
-    console.error("Order email error:", error);
-  }
-};
+// Builds the emailData shape that sendOrderConfirmationEmail expects
+const buildEmailData = (orderId, order) => ({
+  orderId,
+  customerName: order.address?.firstName && order.address?.lastName
+    ? `${order.address.firstName} ${order.address.lastName}`
+    : undefined,
+  date: order.date,
+  paymentMethod: order.paymentMethod,
+  payment: order.payment,
+  items: order.items,
+  amount: order.amount,
+  address: order.address,
+});
 
 /* -------------------- COD ORDER -------------------- */
 const placeOrder = async (req, res) => {
@@ -56,7 +46,18 @@ const placeOrder = async (req, res) => {
 
     await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-    sendOrderEmail(userId, order._id, order).catch(console.error);
+    // Send confirmation email — same direct pattern as updateStatus so errors surface clearly
+    try {
+      const user = await userModel.findById(userId);
+      if (user?.email) {
+        await sendOrderConfirmationEmail(user.email, buildEmailData(order._id, order));
+      } else {
+        console.warn("COD order email skipped: no email found for userId", userId);
+      }
+    } catch (emailError) {
+      // Don't fail the order response over an email error — but log it visibly
+      console.error("COD order confirmation email failed:", emailError);
+    }
 
     res.json({ success: true, message: "Order placed successfully" });
   } catch (error) {
@@ -151,10 +152,16 @@ const verifyPayU = async (req, res) => {
 
       await userModel.findByIdAndUpdate(order.userId, { cartData: {} });
 
-      sendOrderEmail(order.userId, order._id, order).catch(console.error);
+      try {
+        const user = await userModel.findById(order.userId);
+        if (user?.email) {
+          await sendOrderConfirmationEmail(user.email, buildEmailData(order._id, order));
+        }
+      } catch (emailError) {
+        console.error("PayU order confirmation email failed:", emailError);
+      }
 
       console.log("Payment successful for txnid:", txnid);
-      // ✅ Go through /verify so React app boots with auth before navigating to /orders
       return res.redirect(`${frontendUrl}/verify?success=true&orderId=${order._id}`);
     }
 

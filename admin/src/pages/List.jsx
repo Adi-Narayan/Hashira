@@ -51,8 +51,7 @@ const List = ({ token }) => {
         <p className='text-zinc-500 text-sm mt-1'>{list.length} items listed</p>
       </div>
 
-      {/* Table Header */}
-      <div className='hidden md:grid grid-cols-[60px_1fr_120px_80px_60px] gap-4 px-4 py-2 text-zinc-500 text-xs font-medium uppercase tracking-widest border-b border-zinc-800 mb-1'>
+      <div className='hidden md:grid grid-cols-[60px_1fr_120px_140px_60px] gap-4 px-4 py-2 text-zinc-500 text-xs font-medium uppercase tracking-widest border-b border-zinc-800 mb-1'>
         <span>Image</span>
         <span>Name</span>
         <span>Category</span>
@@ -69,23 +68,23 @@ const List = ({ token }) => {
           {list.map((item) => (
             <div
               key={item._id}
-              className='grid grid-cols-[60px_1fr_80px] md:grid-cols-[60px_1fr_120px_80px_60px] gap-4 items-center px-4 py-3 border-b border-zinc-800/60 hover:bg-zinc-900/50 transition-colors'
+              className='grid grid-cols-[60px_1fr_80px] md:grid-cols-[60px_1fr_120px_140px_60px] gap-4 items-center px-4 py-3 border-b border-zinc-800/60 hover:bg-zinc-900/50 transition-colors'
             >
-              <img
-                src={item.image[0]}
-                alt={item.name}
-                className='w-10 h-10 object-cover rounded-md bg-zinc-800'
-              />
+              <img src={item.image[0]} alt={item.name} className='w-10 h-10 object-cover rounded-md bg-zinc-800' />
               <div>
                 <p className='text-zinc-200 text-sm font-medium'>{item.name}</p>
                 <p className='text-zinc-600 text-xs mt-0.5'>{item.subCategory}</p>
               </div>
               <p className='text-zinc-400 text-sm hidden md:block'>{item.category}</p>
-              <p className='text-zinc-300 text-sm font-mono'>{currency}{item.price}</p>
+              <div className='hidden md:flex flex-col gap-0.5'>
+                <p className='text-zinc-300 text-sm font-mono'>{currency}{item.price}</p>
+                {item.originalPrice && (
+                  <p className='text-zinc-600 text-xs font-mono line-through'>{currency}{item.originalPrice}</p>
+                )}
+              </div>
               <button
                 onClick={() => removeProduct(item._id)}
                 className='flex items-center justify-center w-7 h-7 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-all mx-auto'
-                title='Remove product'
               >
                 <svg xmlns='http://www.w3.org/2000/svg' className='w-3.5 h-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
                   <polyline points='3 6 5 6 21 6'/>

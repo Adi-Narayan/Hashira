@@ -4,7 +4,7 @@ import { ShopContext } from '../context/ShopContext';
 import RelatedProducts from '../components/RelatedProducts';
 // Drop your size chart image into src/assets/ as size_chart.png
 // When the chart is updated, just replace that file — no code changes needed
-import sizeChartImg from '../assets/size_chart.jpeg';
+import sizeChartImg from '../assets/size_chart.png';
 
 // Size chart link only appears for Topwear — add 'Bottomwear' here when that chart is ready
 const SIZE_CHART_SUBCATEGORIES = new Set(['Topwear']);
@@ -101,6 +101,7 @@ const Product = () => {
   useEffect(() => {
     setQuantity(1);
     setSize('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [productId]);
 
   const handleAddToCart = () => {
@@ -172,6 +173,11 @@ const Product = () => {
           <p className="mt-5 text-3xl font-medium">
             {currency}{productData.price}
           </p>
+          {productData.originalPrice && productData.originalPrice > productData.price && (
+            <p className="mt-1 text-base text-red-400 line-through">
+              {currency}{productData.originalPrice}
+            </p>
+          )}
 
           <p className="mt-5 text-gray-500 md:w-4/5">
             {productData.description}
