@@ -8,6 +8,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.__productsPromise = fetch('%VITE_BACKEND_URL%/api/product/list')
+        .then(function(r){ return r.json(); })
+        .catch(function(){ return null; });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
