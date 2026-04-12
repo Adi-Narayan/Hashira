@@ -1,13 +1,292 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import RelatedProducts from '../components/RelatedProducts';
 // Drop your size chart image into src/assets/ as size_chart.png
 // When the chart is updated, just replace that file — no code changes needed
 import sizeChartImg from '../assets/size_chart.jpeg';
+import axios from 'axios';
 
 // Size chart link only appears for Topwear — add 'Bottomwear' here when that chart is ready
 const SIZE_CHART_SUBCATEGORIES = new Set(['Topwear']);
+
+// ─── Stars Component ─────────────────────────────────────────────────────────
+
+const Stars = ({ value, interactive = false, onSelect }) => {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => interactive && onSelect && onSelect(star)}
+          onMouseEnter={() => interactive && setHovered(star)}
+          onMouseLeave={() => interactive && setHovered(0)}
+          className={`w-11 h-11 sm:w-8 sm:h-8 flex items-center justify-center text-xl leading-none transition-colors ${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default pointer-events-none'}`}
+          disabled={!interactive}
+          aria-label={`${star} star`}
+        >
+          <span className={(hovered || value) >= star ? 'text-yellow-400' : 'text-gray-300'}>★</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ─── Reviews Section ──────────────────────────────────────────────────────────
+
+const ReviewsSection = ({ productId }) => {
+  const { backendUrl, token } = useContext(ShopContext);
+
+  const [reviews, setReviews]       = useState([]);
+  const [myReview, setMyReview]     = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [editMode, setEditMode]     = useState(false);
+  const [rating, setRating]         = useState(5);
+  const [comment, setComment]       = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState('');
+
+  const getMyUserId = () => {
+    if (!token) return null;
+    try {
+      return JSON.parse(atob(token.split('.')[1])).id;
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchReviews = useCallback(async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/review/product/${productId}`);
+      if (res.data.success) {
+        setReviews(res.data.reviews);
+      }
+    } catch {
+      // non-critical — silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [backendUrl, productId]);
+
+  useEffect(() => {
+    setLoading(true);
+    setMyReview(null);
+    setEditMode(false);
+    setError('');
+    fetchReviews();
+  }, [productId, fetchReviews]);
+
+  useEffect(() => {
+    if (reviews.length === 0) return;
+    const myId = getMyUserId();
+    if (!myId) return;
+    const found = reviews.find(r =>
+      (r.userId?._id && r.userId._id === myId) || r.userId === myId
+    );
+    setMyReview(found || null);
+  }, [reviews, token]);
+
+  const averageRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!comment.trim()) { setError('Please write a comment.'); return; }
+    setSubmitting(true);
+    setError('');
+    try {
+      if (editMode && myReview) {
+        const res = await axios.put(
+          `${backendUrl}/api/review/edit`,
+          { reviewId: myReview._id, rating, comment },
+          { headers: { token } }
+        );
+        if (!res.data.success) { setError(res.data.message); return; }
+      } else {
+        const res = await axios.post(
+          `${backendUrl}/api/review/add`,
+          { productId, rating, comment },
+          { headers: { token } }
+        );
+        if (!res.data.success) { setError(res.data.message); return; }
+      }
+      setComment('');
+      setRating(5);
+      setEditMode(false);
+      await fetchReviews();
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!myReview) return;
+    try {
+      const res = await axios.delete(
+        `${backendUrl}/api/review/remove`,
+        { data: { reviewId: myReview._id }, headers: { token } }
+      );
+      if (res.data.success) {
+        setMyReview(null);
+        setEditMode(false);
+        await fetchReviews();
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const startEdit = () => {
+    if (!myReview) return;
+    setRating(myReview.rating);
+    setComment(myReview.comment);
+    setEditMode(true);
+  };
+
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const isEdited = (review) =>
+    review.updatedAt && review.createdAt &&
+    new Date(review.updatedAt).getTime() - new Date(review.createdAt).getTime() > 5000;
+
+  return (
+    <div className="mt-16 pb-10">
+      <hr className="mb-8" />
+
+      {/* Header + average */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h2 className="text-lg font-semibold">Reviews</h2>
+        {averageRating && (
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold">{averageRating}</span>
+            <Stars value={Math.round(Number(averageRating))} />
+            <span className="text-sm text-gray-400">
+              ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Write/Edit form — only show if logged in and no review yet (or in edit mode) */}
+      {token && (!myReview || editMode) && (
+        <form onSubmit={handleSubmit} className="mb-8 p-4 sm:p-5 border border-gray-200 rounded-xl bg-gray-50">
+          <p className="text-sm font-medium mb-3">
+            {editMode ? 'Edit your review' : 'Write a review'}
+          </p>
+          <Stars value={rating} interactive onSelect={setRating} />
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            maxLength={1000}
+            rows={3}
+            placeholder="Share your thoughts about this product..."
+            className="mt-3 w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-400 bg-white"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
+            <span className="text-xs text-gray-400">{comment.length}/1000</span>
+            {error && <span className="text-xs text-red-500">{error}</span>}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-black text-white text-sm px-6 py-2.5 rounded-md hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {submitting ? 'Saving...' : editMode ? 'Save Changes' : 'Submit Review'}
+            </button>
+            {editMode && (
+              <button
+                type="button"
+                onClick={() => { setEditMode(false); setError(''); }}
+                className="text-sm px-6 py-2.5 rounded-md border border-gray-300 hover:bg-gray-100 active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      )}
+
+      {/* Not logged in */}
+      {!token && (
+        <p className="text-sm text-gray-400 mb-6">
+          <a href="/login" className="underline text-gray-700 hover:text-black transition-colors">
+            Login
+          </a>{' '}
+          to leave a review.
+        </p>
+      )}
+
+      {/* Review list */}
+      {loading ? (
+        <p className="text-sm text-gray-400">Loading reviews...</p>
+      ) : reviews.length === 0 ? (
+        <p className="text-sm text-gray-400">No reviews yet. Be the first.</p>
+      ) : (
+        <div className="flex flex-col gap-0">
+          {reviews.map((review) => {
+            const isOwn = myReview?._id === review._id;
+            return (
+              <div
+                key={review._id}
+                className={`py-5 border-b border-gray-100 last:border-0 ${isOwn ? 'relative' : ''}`}
+              >
+                {isOwn && (
+                  <span className="absolute top-5 right-0 text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5">
+                    Your review
+                  </span>
+                )}
+                <div className="flex items-start gap-3 pr-24 sm:pr-0">
+                  {/* Avatar circle */}
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0 text-xs font-semibold text-gray-600 uppercase">
+                    {(review.userId?.name || 'U')[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1">
+                      <span className="text-sm font-medium truncate">
+                        {review.userId?.name || 'User'}
+                      </span>
+                      <Stars value={review.rating} />
+                      <span className="text-xs text-gray-400">
+                        {formatDate(review.createdAt)}
+                        {isEdited(review) && ' · edited'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed break-words">
+                      {review.comment}
+                    </p>
+                    {isOwn && !editMode && (
+                      <div className="flex gap-3 mt-2">
+                        <button
+                          onClick={startEdit}
+                          className="text-xs text-gray-500 hover:text-black underline underline-offset-2 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={handleDelete}
+                          className="text-xs text-red-400 hover:text-red-600 underline underline-offset-2 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Size Chart Modal ─────────────────────────────────────────────────────────
 
@@ -282,6 +561,9 @@ const Product = () => {
         category={productData.category}
         subCategory={productData.subCategory}
       />
+
+      {/* ----- Reviews ----- */}
+      <ReviewsSection productId={productId} />
     </div>
   ) : (
     <div className="opacity-0"></div>
