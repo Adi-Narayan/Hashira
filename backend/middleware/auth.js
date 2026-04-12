@@ -13,7 +13,7 @@ const authUser = async (req, res, next) => {
     next();
   } catch (error) {
     console.log('JWT verification failed:', error.message);
-    res.json({ success: false, message: error.message });
+    res.json({ success: false, message: 'Order unavailable, please try again later' });
   }
 };
 
