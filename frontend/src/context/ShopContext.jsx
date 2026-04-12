@@ -123,14 +123,25 @@ const ShopContextProvider = (props) => {
 
     const getProductsData = async () => {
         try {
-            const response = await axios.get(backendUrl + '/api/product/list')
-            if (response.data.products) {
-                setProducts(response.data.products)
+            let data = null;
+
+            if (window.__productsPromise) {
+                data = await window.__productsPromise;
+                window.__productsPromise = null; // consume once
+            }
+
+            if (!data?.products) {
+                const response = await axios.get(backendUrl + '/api/product/list');
+                data = response.data;
+            }
+
+            if (data.products) {
+                setProducts(data.products);
             } else {
-                console.log(response.data.message)
+                console.log(data.message);
             }
         } catch (error) {
-            console.log(error.message)
+            console.log(error.message);
         }
     }
 
