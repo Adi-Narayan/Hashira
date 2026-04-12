@@ -6,6 +6,7 @@ import RelatedProducts from '../components/RelatedProducts';
 // When the chart is updated, just replace that file — no code changes needed
 import sizeChartImg from '../assets/size_chart.jpeg';
 import axios from 'axios';
+import cldImg from '../utils/cldImg';
 
 // Size chart link only appears for Topwear — add 'Bottomwear' here when that chart is ready
 const SIZE_CHART_SUBCATEGORIES = new Set(['Topwear']);
@@ -433,7 +434,7 @@ const Product = () => {
             {productData.image.map((item, index) => (
               <img
                 key={index}
-                src={item}
+                src={cldImg(item)}
                 onClick={() => setImage(item)}
                 className="w-[24%] sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer rounded-lg border-2"
                 alt=""
@@ -441,7 +442,7 @@ const Product = () => {
             ))}
           </div>
           <div className="w-full sm:w-[80%]">
-            <img src={image} alt="" className="w-full h-auto rounded-xl border-2" />
+            <img src={cldImg(image)} alt="" className="w-full h-auto rounded-xl border-2" />
           </div>
         </div>
 

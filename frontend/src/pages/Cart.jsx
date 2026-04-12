@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components//Title'
 import { assets } from '../assets/assets';
+import cldImg from '../utils/cldImg';
 import CartTotal from '../components/CartTotal';
 
 const Cart = () => {
@@ -42,7 +43,7 @@ const Cart = () => {
 
               {/* Product info */}
               <div className='flex items-start gap-6'>
-                <img className='w-16 sm:w-20' src={productData.image[0]} alt="" />
+                <img className='w-16 sm:w-20' src={cldImg(productData.image[0])} alt="" />
                 <div>
                   <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
                   <div className='flex items-center gap-5 mt-2'>

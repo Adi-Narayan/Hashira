@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { Link } from 'react-router-dom';
+import cldImg from '../utils/cldImg';
 
 const ProductItem = ({ id, image, name, price, originalPrice }) => {
   const { currency } = useContext(ShopContext);
@@ -13,7 +14,7 @@ const ProductItem = ({ id, image, name, price, originalPrice }) => {
       <div className="aspect-square overflow-hidden bg-gray-100 border border-black-300 rounded-lg hover:shadow-lg transition relative">
         <img
           className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-          src={image[0]}
+          src={cldImg(image[0])}
           alt={name}
         />
         {hasDiscount && (
