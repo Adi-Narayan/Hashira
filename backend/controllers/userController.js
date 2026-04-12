@@ -6,7 +6,7 @@ import { sendWelcomeEmail } from '../services/emailService.js';
 
 // Create JWT token
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1825d' });
 }
 
 //  Route: POST /api/user/login
