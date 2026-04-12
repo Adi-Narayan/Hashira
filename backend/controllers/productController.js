@@ -93,6 +93,7 @@ const editProduct = async (req, res) => {
 const listProduct = async (req, res) => {
     try {
         const products = await productModel.find({});
+        res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
         res.json({ success: true, products })
     }
     catch (error) {
