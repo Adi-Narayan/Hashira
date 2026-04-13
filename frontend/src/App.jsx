@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import SearchBar from './components/SearchBar';
+import ScrollToTop from './components/ScrollToTop';
 import { ToastContainer, toast } from 'react-toastify';
 
 const App = () => {
@@ -24,6 +25,7 @@ const App = () => {
       className="min-h-screen bg-cover bg-center px-4 sm:px-[5vw] md:px-[7vw] ls:px-[9vw]"
       style={{ backgroundImage: `url(${assets.bg})` }}>
       <ToastContainer />
+      <ScrollToTop />
       <Navbar />
       <SearchBar />
       <Routes>
