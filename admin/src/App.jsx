@@ -7,6 +7,7 @@ import List from './pages/List'
 import Orders from './pages/Orders'
 import Edit from './pages/Edit'
 import Reviews from './pages/Reviews'
+import Stats from './pages/Stats'
 import Login from './components/Login'
 import { ToastContainer } from 'react-toastify';
 
@@ -21,7 +22,7 @@ const App = () => {
   }, [token])
 
   return (
-    <div className='bg-gray-50 min-h-screen'>
+    <div className='bg-gray-100 min-h-screen'>
       <ToastContainer />
       {token === ""
         ? <Login setToken={setToken} />
@@ -38,6 +39,7 @@ const App = () => {
                 <Route path="/orders" element={<Orders token={token} />} />
                 <Route path="/edit/:productId" element={<Edit token={token} />} />
                 <Route path="/reviews" element={<Reviews token={token} />} />
+                <Route path="/stats" element={<Stats token={token} />} />
               </Routes>
             </div>
           </div>
