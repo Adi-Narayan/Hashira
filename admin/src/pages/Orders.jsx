@@ -11,9 +11,37 @@ const STATUS_STYLES = {
   'Delivery':     'bg-green-500/10 text-green-400 border-green-500/20',
 }
 
+/* ── Confirm Delete Modal ── */
+const DeleteModal = ({ orderId, onCancel, onConfirm }) => (
+  <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4'>
+    <div className='bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl'>
+      <h3 className='text-zinc-100 text-base font-semibold mb-2'>Delete this order?</h3>
+      <p className='text-zinc-400 text-sm mb-1'>Order ID:</p>
+      <p className='text-zinc-300 text-xs font-mono break-all mb-4'>{orderId}</p>
+      <p className='text-red-400 text-sm mb-6'>This cannot be undone.</p>
+      <div className='flex gap-3'>
+        <button
+          onClick={onCancel}
+          className='flex-1 py-2.5 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800 transition-colors'
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className='flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors'
+        >
+          Delete Order
+        </button>
+      </div>
+    </div>
+  </div>
+)
+
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState(null)   // orderId string or null
+  const [pushing, setPushing] = useState({})               // { [orderId]: true } while in-flight
 
   const fetchAllOrders = async () => {
     if (!token) return
@@ -48,12 +76,62 @@ const Orders = ({ token }) => {
     }
   }
 
+  const handleDeleteConfirm = async () => {
+    const orderId = deleteTarget
+    setDeleteTarget(null)
+    try {
+      const res = await axios.delete(
+        backendUrl + '/api/order/delete',
+        { data: { orderId }, headers: { token } }
+      )
+      if (res.data.success) {
+        setOrders(prev => prev.filter(o => o._id !== orderId))
+        toast.success('Order deleted')
+      } else {
+        toast.error(res.data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
+  const handleShiprocket = async (orderId) => {
+    setPushing(prev => ({ ...prev, [orderId]: true }))
+    try {
+      const res = await axios.post(
+        backendUrl + '/api/order/push-shiprocket',
+        { orderId },
+        { headers: { token } }
+      )
+      if (res.data.success) {
+        setOrders(prev =>
+          prev.map(o => o._id === orderId ? { ...o, shiprocketPushed: true } : o)
+        )
+        toast.success('Order transferred to Shiprocket')
+      } else {
+        toast.error(res.data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setPushing(prev => ({ ...prev, [orderId]: false }))
+    }
+  }
+
   useEffect(() => {
     fetchAllOrders()
   }, [token])
 
   return (
     <div>
+      {deleteTarget && (
+        <DeleteModal
+          orderId={deleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
+
       <div className='mb-6'>
         <h2 className='text-zinc-100 text-xl font-semibold tracking-tight'>Orders</h2>
         <p className='text-zinc-500 text-sm mt-1'>{orders.length} total orders</p>
@@ -132,7 +210,7 @@ const Orders = ({ token }) => {
               {/* Divider */}
               <div className='border-t border-zinc-800 mb-4' />
 
-              {/* Bottom row: customer + payment + status selector */}
+              {/* Bottom row: customer + payment + actions */}
               <div className='flex flex-wrap items-end justify-between gap-4'>
                 {/* Customer info */}
                 <div className='flex flex-col gap-1'>
@@ -145,8 +223,9 @@ const Orders = ({ token }) => {
                   </p>
                 </div>
 
-                {/* Payment + status */}
-                <div className='flex items-center gap-3 flex-wrap'>
+                {/* Actions */}
+                <div className='flex items-center gap-2 flex-wrap'>
+                  {/* Payment method indicator */}
                   <div className='flex flex-col items-end gap-1'>
                     <span className='text-zinc-500 text-xs'>
                       {order.paymentMethod}
@@ -156,6 +235,22 @@ const Orders = ({ token }) => {
                     </span>
                   </div>
 
+                  {/* Shiprocket button */}
+                  {order.shiprocketPushed ? (
+                    <span className='text-xs text-zinc-500 border border-zinc-700 rounded-lg px-3 py-2 cursor-default'>
+                      ✓ Transferred to Shiprocket
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleShiprocket(order._id)}
+                      disabled={!!pushing[order._id]}
+                      className='text-xs text-teal-400 border border-teal-500/40 hover:border-teal-400 hover:bg-teal-500/10 rounded-lg px-3 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                    >
+                      {pushing[order._id] ? 'Pushing...' : 'Push to Shiprocket'}
+                    </button>
+                  )}
+
+                  {/* Status selector */}
                   <select
                     value={order.status}
                     onChange={(e) => statusHandler(e, order._id)}
@@ -167,6 +262,14 @@ const Orders = ({ token }) => {
                     <option value='Out for Delivery'>Out for Delivery</option>
                     <option value='Delivery'>Delivered</option>
                   </select>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={() => setDeleteTarget(order._id)}
+                    className='text-xs text-red-500 border border-red-500/30 hover:border-red-500/60 hover:bg-red-500/10 rounded-lg px-3 py-2 transition-colors'
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
