@@ -245,6 +245,23 @@ const getStats = async (req, res) => {
   }
 };
 
+/* -------------------- DELETE ORDER -------------------- */
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId is required' });
+    }
+    const order = await orderModel.findByIdAndDelete(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+    res.json({ success: true, message: 'Order deleted' });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
 /* -------------------- EXPORTS -------------------- */
 export {
   placeOrder,
@@ -253,5 +270,6 @@ export {
   allOrders,
   userOrders,
   updateStatus,
-  getStats
+  getStats,
+  deleteOrder
 };
