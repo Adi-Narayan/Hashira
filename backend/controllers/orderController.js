@@ -2,6 +2,7 @@ import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
 import crypto from "crypto";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "../services/emailService.js";
+import { pushOrder } from '../services/shiprocketService.js';
 
 /* -------------------- PAYU CONFIG -------------------- */
 const payuMerchantKey = process.env.PAYU_MERCHANT_KEY;
@@ -262,6 +263,36 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+/* -------------------- SHIPROCKET -------------------- */
+const pushShiprocket = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId is required' });
+    }
+
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (order.shiprocketPushed) {
+      return res.status(400).json({ success: false, message: 'Order already transferred to Shiprocket' });
+    }
+
+    await pushOrder(order);
+
+    order.shiprocketPushed = true;
+    await order.save();
+
+    res.json({ success: true, message: 'Order transferred to Shiprocket' });
+  } catch (error) {
+    console.error('pushShiprocket error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 /* -------------------- EXPORTS -------------------- */
 export {
   placeOrder,
@@ -271,5 +302,6 @@ export {
   userOrders,
   updateStatus,
   getStats,
-  deleteOrder
+  deleteOrder,
+  pushShiprocket
 };
