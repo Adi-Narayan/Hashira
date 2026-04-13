@@ -223,6 +223,28 @@ const updateStatus = async (req, res) => {
   }
 };
 
+/* -------------------- STATS -------------------- */
+const getStats = async (req, res) => {
+  try {
+    const orders = await orderModel.find({ status: { $ne: 'Failed' } });
+
+    let collected = 0;
+    let pending = 0;
+
+    orders.forEach(order => {
+      if (order.payment === true) {
+        collected += order.amount;
+      } else {
+        pending += order.amount;
+      }
+    });
+
+    res.json({ success: true, collected, pending, total: collected + pending });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
 /* -------------------- EXPORTS -------------------- */
 export {
   placeOrder,
@@ -230,5 +252,6 @@ export {
   verifyPayU,
   allOrders,
   userOrders,
-  updateStatus
+  updateStatus,
+  getStats
 };
