@@ -52,7 +52,7 @@ const Orders = ({ token }) => {
         { headers: { token } }
       )
       if (response.data.success) {
-        setOrders(response.data.orders.reverse())
+        setOrders([...response.data.orders].reverse())
       } else {
         toast.error(response.data.message)
       }
@@ -260,7 +260,7 @@ const Orders = ({ token }) => {
                     <option value='Packing'>Packing</option>
                     <option value='Shipped'>Shipped</option>
                     <option value='Out for Delivery'>Out for Delivery</option>
-                    <option value='Delivery'>Delivered</option>
+                    <option value='Delivery'>Delivery</option>
                   </select>
 
                   {/* Delete button */}

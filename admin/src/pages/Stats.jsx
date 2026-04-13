@@ -7,7 +7,7 @@ const StatCard = ({ label, amount, highlight }) => (
   <div className={`bg-zinc-900 border rounded-xl p-6 flex flex-col gap-2 ${highlight ? 'border-zinc-600' : 'border-zinc-800'}`}>
     <p className='text-zinc-500 text-xs font-mono uppercase tracking-widest'>{label}</p>
     <p className={`text-2xl font-bold ${highlight ? 'text-zinc-100' : 'text-zinc-200'}`}>
-      {currency}{amount.toLocaleString('en-IN')}
+      {currency}{(amount ?? 0).toLocaleString('en-IN')}
     </p>
   </div>
 )
