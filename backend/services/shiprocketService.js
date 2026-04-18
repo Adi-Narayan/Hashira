@@ -45,7 +45,7 @@ export const pushOrder = async (order) => {
     billing_state: order.address.state,
     billing_pincode: String(order.address.zipcode),
     billing_country: 'India',
-    billing_phone: String(order.address.phone),
+    billing_phone: String(order.address.phone).replace(/\D/g, '').replace(/^91/, '').slice(-10),
     billing_email: billingEmail,
     shipping_is_billing: 1,
     payment_method: order.payment === true ? 'Prepaid' : 'COD',
