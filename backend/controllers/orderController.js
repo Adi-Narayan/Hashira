@@ -60,6 +60,11 @@ const placeOrder = async (req, res) => {
       console.error("COD order confirmation email failed:", emailError);
     }
 
+    // Auto-push to Shiprocket — non-blocking, never fails the order response
+    pushOrder(order)
+      .then(() => orderModel.findByIdAndUpdate(order._id, { shiprocketPushed: true }))
+      .catch(err => console.error('Shiprocket auto-push failed (COD):', err));
+
     res.json({ success: true, message: "Order placed successfully" });
   } catch (error) {
     console.error(error);
@@ -161,6 +166,11 @@ const verifyPayU = async (req, res) => {
       } catch (emailError) {
         console.error("PayU order confirmation email failed:", emailError);
       }
+
+      // Auto-push to Shiprocket — non-blocking, never blocks the redirect
+      pushOrder(order)
+        .then(() => orderModel.findByIdAndUpdate(order._id, { shiprocketPushed: true }))
+        .catch(err => console.error('Shiprocket auto-push failed (PayU):', err));
 
       console.log("Payment successful for txnid:", txnid);
       return res.redirect(`${frontendUrl}/verify?success=true&orderId=${order._id}`);
