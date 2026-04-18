@@ -2,7 +2,7 @@ import userModel from "../models/userModel.js";
 import validator from "validator"
 import bcrypt from "bcrypt"
 import jwt from 'jsonwebtoken'
-import { sendWelcomeEmail } from '../services/emailService.js';
+import { sendWelcomeEmail, sendOtpEmail } from '../services/emailService.js';
 
 // Create JWT token
 const createToken = (id) => {
@@ -85,17 +85,65 @@ const adminLogin = async (req, res) => {
     }
 }
 
-//  Route: POST /api/user/forgot-password
-const forgotPassword = async (req, res) => {
-    const { email, newPassword } = req.body;
+//  Route: POST /api/user/send-otp
+const sendOtp = async (req, res) => {
+    const { email } = req.body;
     try {
         const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.json({ success: false, message: 'No account found with this email' });
+        }
 
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        const salt = await bcrypt.genSalt(10);
+        user.resetOtp = await bcrypt.hash(otp, salt);
+        user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await user.save();
+
+        await sendOtpEmail(email, otp);
+        res.json({ success: true, message: 'OTP sent' });
+    } catch (err) {
+        console.log(err);
+        res.json({ success: false, message: err.message });
+    }
+}
+
+//  Route: POST /api/user/forgot-password
+const forgotPassword = async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+    try {
+        if (!otp || !newPassword) {
+            return res.json({ success: false, message: 'OTP and new password are required' });
+        }
+
+        const user = await userModel.findOne({ email });
         if (!user) {
             return res.json({ success: false, message: 'User not found' });
         }
 
+        if (!user.resetOtp || !user.resetOtpExpiry) {
+            return res.json({ success: false, message: 'No OTP requested. Please request a new one.' });
+        }
+
+        if (new Date() > user.resetOtpExpiry) {
+            user.resetOtp = undefined;
+            user.resetOtpExpiry = undefined;
+            await user.save();
+            return res.json({ success: false, message: 'OTP has expired. Please request a new one.' });
+        }
+
+        const isMatch = await bcrypt.compare(otp, user.resetOtp);
+        if (!isMatch) {
+            return res.json({ success: false, message: 'Invalid OTP. Please try again.' });
+        }
+
+        if (newPassword.length < 8) {
+            return res.json({ success: false, message: 'Password must be at least 8 characters' });
+        }
+
         user.password = newPassword;
+        user.resetOtp = undefined;
+        user.resetOtpExpiry = undefined;
         await user.save();
 
         res.json({ success: true, message: 'Password updated successfully' });
@@ -136,4 +184,4 @@ const updateProfile = async (req, res) => {
 };
 
 
-export { loginUser, registerUser, adminLogin, forgotPassword, getProfile, updateProfile };
+export { loginUser, registerUser, adminLogin, sendOtp, forgotPassword, getProfile, updateProfile };

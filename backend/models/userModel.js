@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   cartData: { type: Object, default: {} },
-  phone: { type: String }  // ✅ Add this line
+  phone: { type: String },
+  resetOtp: { type: String },
+  resetOtpExpiry: { type: Date },
 }, { minimize: false })
 
 // Pre-save hook to hash password

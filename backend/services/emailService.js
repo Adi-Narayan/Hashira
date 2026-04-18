@@ -227,3 +227,40 @@ export const sendOrderStatusEmail = async (userEmail, orderDetails, status) => {
     return { success: false, error: error.message };
   }
 };
+
+// ─── OTP Email ────────────────────────────────────────────────────────────────
+
+const getOtpEmailTemplate = (otp) => `
+<!DOCTYPE html>
+<html>
+<head>${baseStyles}</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Hashira</h1>
+      <p>Password reset</p>
+    </div>
+    <div class="body">
+      <p>Use the OTP below to reset your password. It expires in <strong>10 minutes</strong>.</p>
+      <div style="margin: 28px 0; text-align: center;">
+        <div style="display: inline-block; padding: 16px 40px; background: #f4f4f4; border: 1px solid #e0e0e0; letter-spacing: 0.35em; font-size: 28px; font-weight: 700; color: #1a1a1a; font-family: monospace;">
+          ${otp}
+        </div>
+      </div>
+      <p style="font-size: 13px; color: #888;">If you did not request this, you can safely ignore this email.</p>
+    </div>
+    <div class="footer">Hashira — hashira.in</div>
+  </div>
+</body>
+</html>
+`;
+
+export const sendOtpEmail = async (userEmail, otp) => {
+  try {
+    await sendEmail(userEmail, 'Your Hashira password reset OTP', getOtpEmailTemplate(otp));
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    return { success: false, error: error.message };
+  }
+};
