@@ -182,7 +182,7 @@ const verifyPayU = async (req, res) => {
 /* -------------------- ADMIN -------------------- */
 const allOrders = async (req, res) => {
   try {
-    const orders = await orderModel.find({ status: { $ne: "Failed" } });
+    const orders = await orderModel.find({ status: { $nin: ['Failed', 'Pending'] } });
     res.json({ success: true, orders });
   } catch (error) {
     res.json({ success: false, message: error.message });
@@ -227,7 +227,7 @@ const updateStatus = async (req, res) => {
 /* -------------------- STATS -------------------- */
 const getStats = async (req, res) => {
   try {
-    const orders = await orderModel.find({ status: { $ne: 'Failed' } });
+    const orders = await orderModel.find({ status: { $nin: ['Failed', 'Pending'] } });
 
     let collected = 0;
     let pending = 0;
