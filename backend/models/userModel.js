@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   phone: { type: String },
   resetOtp: { type: String },
   resetOtpExpiry: { type: Date },
+  resetOtpAttempts: { type: Number, default: 0 },
 }, { minimize: false })
 
 // Pre-save hook to hash password

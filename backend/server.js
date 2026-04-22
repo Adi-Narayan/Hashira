@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import "dotenv/config";
 
 import connectDB from "./config/mongodb.js";
@@ -16,8 +18,9 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 /* -------------------- MIDDLEWARE -------------------- */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 /* -------------------- CORS CONFIG -------------------- */
 const allowedOrigins = [
@@ -28,26 +31,34 @@ const allowedOrigins = [
   "http://localhost:5174"
 ];
 
+// PayU posts to /api/order/verifyPayU from payu.in (cross-origin form POST).
+// Browsers don't send an Origin header on that redirect for server-to-server
+// form posts, but we also mount a CORS-less route for PayU callbacks below.
 app.use(
   cors({
     origin: (origin, callback) => {
-      /**
-       * 1 Allow server-to-server calls (PayU, webhooks, Postman)
-       * 2 Allow all known frontend origins
-       * 3 DO NOT block unknown origins to avoid PayU failure
-       */
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(null, true);
+      if (!origin) return callback(null, true); // server-to-server, curl, PayU
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("CORS blocked: origin not allowed"));
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
   })
 );
+
+/* -------------------- RATE LIMITING -------------------- */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests, please try again later." }
+});
+app.use("/api/user/login", authLimiter);
+app.use("/api/user/register", authLimiter);
+app.use("/api/user/admin", authLimiter);
+app.use("/api/user/send-otp", authLimiter);
+app.use("/api/user/forgot-password", authLimiter);
 
 /* -------------------- ROUTES -------------------- */
 app.use("/api/user", userRouter);

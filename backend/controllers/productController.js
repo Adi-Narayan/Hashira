@@ -1,6 +1,15 @@
 import { v2 as cloudinary } from "cloudinary"
 import productModel from "../models/productModel.js";
 
+const uploadBuffer = (buffer) =>
+    new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { resource_type: "image" },
+            (err, result) => (err ? reject(err) : resolve(result))
+        );
+        stream.end(buffer);
+    });
+
 // Add product
 const addProduct = async (req, res) => {
     try {
@@ -15,7 +24,7 @@ const addProduct = async (req, res) => {
 
         let imagesUrl = await Promise.all(
             images.map(async (item) => {
-                let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
+                const result = await uploadBuffer(item.buffer);
                 return result.secure_url
             })
         )
@@ -56,7 +65,7 @@ const editProduct = async (req, res) => {
         for (let i = 0; i < slots.length; i++) {
             const newFile = req.files?.[slots[i]]?.[0]
             if (newFile) {
-                const result = await cloudinary.uploader.upload(newFile.path, { resource_type: 'image' })
+                const result = await uploadBuffer(newFile.buffer)
                 finalImages.push(result.secure_url)
             } else if (existing[i]) {
                 finalImages.push(existing[i])

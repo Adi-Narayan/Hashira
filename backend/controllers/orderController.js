@@ -130,15 +130,46 @@ const placeOrderPayU = async (req, res) => {
 /* -------------------- PAYU VERIFY -------------------- */
 const verifyPayU = async (req, res) => {
   try {
-    console.log("PayU callback received:", req.body);
+    console.log("PayU callback received (txnid):", req.body?.txnid);
 
     const status = req.body?.status;
     const txnid = req.body?.txnid;
+    const postedHash = req.body?.hash;
+    const email = req.body?.email;
+    const firstname = req.body?.firstname;
+    const productinfo = req.body?.productinfo;
+    const amount = req.body?.amount;
+    const key = req.body?.key;
     const frontendUrl = getFrontendUrl();
 
-    if (!status || !txnid) {
-      console.error("Invalid PayU callback payload:", req.body);
+    if (!status || !txnid || !postedHash) {
+      console.error("Invalid PayU callback payload");
       return res.redirect(`${frontendUrl}/verify?success=false&reason=invalid`);
+    }
+
+    // Reverse hash per PayU spec:
+    //   sha512(salt|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key)
+    const udf1 = req.body?.udf1 || "";
+    const udf2 = req.body?.udf2 || "";
+    const udf3 = req.body?.udf3 || "";
+    const udf4 = req.body?.udf4 || "";
+    const udf5 = req.body?.udf5 || "";
+
+    const additionalCharges = req.body?.additionalCharges;
+    let reverseString = `${payuSalt}|${status}||||||${udf5}|${udf4}|${udf3}|${udf2}|${udf1}|${email}|${firstname}|${productinfo}|${amount}|${txnid}|${key}`;
+    if (additionalCharges) {
+      reverseString = `${additionalCharges}|${reverseString}`;
+    }
+    const computedHash = crypto.createHash("sha512").update(reverseString).digest("hex");
+
+    if (computedHash !== postedHash) {
+      console.error("PayU hash mismatch for txnid:", txnid);
+      return res.redirect(`${frontendUrl}/verify?success=false&reason=tampered`);
+    }
+
+    if (key !== payuMerchantKey) {
+      console.error("PayU merchant key mismatch for txnid:", txnid);
+      return res.redirect(`${frontendUrl}/verify?success=false&reason=tampered`);
     }
 
     console.log("Looking for order with txnid:", txnid);
@@ -147,6 +178,12 @@ const verifyPayU = async (req, res) => {
     if (!order) {
       console.error("Order not found for txnid:", txnid);
       return res.redirect(`${frontendUrl}/verify?success=false&reason=notfound`);
+    }
+
+    // Amount tamper check — compare against the server-side order amount
+    if (Number(amount) !== Number(order.amount)) {
+      console.error("PayU amount mismatch for txnid:", txnid, "posted:", amount, "expected:", order.amount);
+      return res.redirect(`${frontendUrl}/verify?success=false&reason=tampered`);
     }
 
     console.log("Order found:", order._id);
