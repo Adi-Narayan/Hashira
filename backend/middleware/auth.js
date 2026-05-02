@@ -9,11 +9,14 @@ const authUser = async (req, res, next) => {
 
   try {
     const token_decode = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = token_decode.id;  
+    if (!token_decode?.id) {
+      return res.json({ success: false, message: 'Session expired. Please login again.' });
+    }
+    req.userId = token_decode.id;
     next();
   } catch (error) {
     console.log('JWT verification failed:', error.message);
-    res.json({ success: false, message: 'Order unavailable, please try again later' });
+    res.json({ success: false, message: 'Session expired. Please login again.' });
   }
 };
 
